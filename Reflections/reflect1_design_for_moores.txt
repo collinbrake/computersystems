@@ -1,0 +1,39 @@
+Design for Moore's Law
+
+Collin Brake, 2021-01-15
+
+Instructor: Dr. Shiva Sastry
+
+The University of Akron
+
+A list called the 8 Great Ideas in Computer Architecture outlines
+core concepts that have made the semiconductor industry so productive over the
+past 70 years. The first of these says, "Design for Moore's Law." While Gordon
+Moore's prediction held, transistor density doubled faster than the design
+cycle of most products. Products conceptualized around current technology would
+be obsolete before they were released, so engineers had to anticipate and
+design for future technology.
+
+Moore halved his prediction in 1975, and the rate of change in transistor
+density has continued to decrease since then, at least in general. To
+compensate, hardware has been specialized for many different tasks,
+notably with the use of GPU's and TPU's for machine learning and with
+other processors optimized for machine vision. The Machine Learning for Systems
+project at Google Brain, which uses reinforcement learning to optimize
+chip floor planning, is an amazing example of how the principle of engineering
+for projected needs and technology continues to be a core principle in silicon
+design.
+
+Only a small percentage of the tech industry focuses on chip design, but given the
+rapid advancement of computer hardware and software in every sector of the industry, especially
+in areas like edge computing and artificial intelligence, engineers should still "design
+for Moore's Law" or design products that not only make use of the most current
+technology but also anticipate the capabilites of future systems and are
+positioned to fill future needs. Engineers today are not looking at a single
+area of growth, as Moore's Law did, but rather at many different advancing
+technologies in areas such as connectivity, data processing, sensors, electric
+actuation, and batteries. How do engineers live beyond the edge of current
+technology? Is this accomplished by specialization in one area, or by a broad
+understanding of all of the techonologies that combine in complex systems? What
+are some technologies that are following a growth projection like computer
+processors did 50 years ago?

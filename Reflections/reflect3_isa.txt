@@ -1,0 +1,80 @@
+Execution of a stored program is the central idea that digital computing has
+always been based around. Programs and parts of programs can be stored in 3
+different places on a computer: in memory (off processor), in registers (on
+processor), or in instructions that are actually being executed on the
+processor. Instructions consist of operations packaged along with the operands
+(data), and they are stored in binary form as words. Words length is generally
+32 or 64 bits. Words are passed by the memory controller from the memory or RAM
+to the registers, where they are taken from to be processed. This reflection
+will delve into instruction set architecture (ISA) and also the specifics of
+how instructions are packaged in binary format, explaining why these ideas are
+important to Computer Scientists and Engineers.
+
+Instruction set architectures rigidly define exactly what operations a
+processor can perform on data. In the load/store architecture, there are two
+instructions, load word and store word, that interact with data on memory. The
+rest of the instructions in this architecture will not touch data on memory,
+and only will operate on data in registers. The load/store architecture is a
+Reduced Instruction Set Computer (RISC) architecture. The MIPS computer studied
+in this class has a RISC architecture with 55 instructions. This is in contrast
+to Complex Instruction Set Computer (CISC) architectures such as those used by
+Intel that have some 900 instructions, where many instructions manipulate the
+data directly on RAM. While RISC architectures result in many more instructions
+for each line of high-level code, it turns out that they are actually faster
+than their CISC counterparts. Each instruction takes much less time to execute
+than a complex instruction. This is an application of the Design Principle
+"Simplicity Favors Regularity". Simpler designs are smaller and have faster
+execution times than complex programs. The designers of the MIPS computer used
+elegant solutions like the $zero register to simplify the instruction set even
+more. The add instruction paired with the $zero register effectively moves the
+other operand of the add operator to another register, eliminating the need for
+a move instruction in the ISA. Some RISC architectures, such as the one used by
+the MIPS computer, are optimized for speed even more by making the common case
+fast, i.e. optimizing operations that are performed frequently. One example of
+this is found in immediate operands like addi that optimize common programming
+operations with small constants by using immediate values instead of loading
+from register. Understanding ISA's and the tradeoffs between RISC and CISC
+architectures is important to Computer Scientists and Engineers in selecting
+hardware and tools for their jobs. The new Apple M1 chip incorperates an ARM
+processor (RISC architecture) that replaces the Intel processors previously
+used in Apple personal computers. Since the RISC architecture is fundimentally
+more performant and more efficient than CISC architectures, the M1 chip will
+function more efficiently and faster than an Intel chip. Understanding computer
+architecture at a deeper level allows us to make informed decisions about our
+techonology choices.
+
+Moving on from instruction set architecture, we come to the topic of how
+instructions and the words they compose are actually packed into the binary
+format that is seen and understood by the processor. One important
+consideration is byte ordering: when a numeric value or an instruction is
+encoded as bytes, will the bytes be ordered from least-significant to most
+significant or vice versa? A processor's byte ordering is called its endianess,
+with big endian defining most-significant byte on the right while little endian
+refers to ordering the least-significant byte from the right. The endianness of
+the words on a processor is generally set by the designers without option to
+change. Using the wrong endianess for a given processor will result in garabage
+data, so programmers must understand this concept. A consideration when
+encoding numeric values is how to represent the sign of a value. Some values in
+computer systems are unsigned by convention. Unsigned integers of n-bits have a
+full range of [0, 2^n - 1], since none of the bits are used to signify sign.
+Signed values, in contrast, must use the leading bit to specify whether the
+value is positive or negative, dividing the range by two. This range extends on
+both sides of zero, however, so the total range is not halved. Programming
+languages provide utilities that will provide software developers with the
+range of each numerical representation used by the language. These should be
+used to avoid overflowing data, which will result in garabage just like
+reversing endianess does. Many high-level languages marshall data automatically
+so that the programmmer generally does not have to deal with the endianess of a
+system directly, but choosing signed integers or unsigned representations is a
+common decision in languages like C++. Even endianess comes into consideration
+when computers are networked with protocols such as CAN bus, and the differing
+endianesses of the systems on the network must be taken into consideration.
+
+There are many crucial technical concepts such as instruction set architecture
+and endianess that Computer Scientists and Engineers must understand. The
+general principles that guide processor design, however, are perhaps the
+most compelling in their application to our daily design process. In the spirit
+of the design principle "Simplicity favors regularity" should programmers make
+their schemas as rigid as possible, prefering to define fewer types of data
+structures and generalizing them to many tasks in a system, even though it
+might require more lines of code?

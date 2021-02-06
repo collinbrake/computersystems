@@ -1,0 +1,103 @@
+There are many times in a programmer's career when either they will interact
+directly with machine code, or when having an understanding of the way machine
+code is formatted will enable them to write better programs. When a software
+developer networks computers, binary data is the transport medium. Programmers
+may have to look at core dumps, which contain machine code from a computer's
+memory, to debug software. Overflow/underflow create issues when developers
+don't consider binary number range. Whenever a C or C++ program compiles, it
+goes through the steps of creating .s files (assembly language) and .o files
+(binary machine code), which the programmer has access to and should understand
+conceptually. There are times when parts of a program are written in assembly
+code to improve performance, or more commonly, the programmer will use atomic
+operations (C/C++) or intrinsics (Go) which are functions that wrap a
+machine-native instruction which directly replaces the function call at compile
+time (Stack Overflow). As an example, one's count is an operation that is used
+for cryptography and compression techniques. Implimenting one's count in the Go
+language with intrinsics can provide a 4x performance gain over standard
+methods in the same language (Dave Cheney). Understanding binary code,
+numerical representations in binary, and the structure of instructions on a
+processor are critical for interacting with computers effectively at a low
+level.
+
+Binary is the basic language of computers. Given the large number of bits
+needed to represent a decimal number or operation, the industry has turned to
+other number bases to more efficiently represent machine code. The most common
+of these is hexadecimal, "six after ten" which is the base 16 numbering system.
+Converting binary values to hexadecimal means that four bits will be combined
+into one hexadecimal symbol, and this works well for representing values on a
+computer given that bits almost always come in groups with a length equal to
+some multiple of four, as in 8 or 16 bit integers or the 32 or 64 bit
+instructions found in most processors. The result is that when converting any
+of these values to hexadecimal the bits split out evenly to hexadecimal symbols.
+
+After hexadecimal representation of machine code and values, there are many
+other concepts that programmers must understand. Overflow/underflow is one of
+the most basic and important of these. Every binary representation has a range
+- for example, an 8 bit unsigned integer has a range of [0, 2^8 - 1]. Thus, if
+a value greater than 2^8 - 1 is stored to an 8 bit unsigned integer, garbage
+will result. This has happened in my experience when generating random numbers
+in C++. Adding the output of two calls to rand() together is effective for
+generating large random numbers, but when both calls return a large number it
+overflows the integer range. When negative values resulted from random number
+generation, I realized that the values had overflowed range, resulting in these
+garbage values.
+
+The range of unsigned numbers is simple: 2^n - 1, where n is the number of
+bits. How about signed numbers? It depends on the representation used, but we
+will consider two's compliment since it is implimented almost exclusively. One
+reason two's compliment is prefered over other representatations such as
+sign-magnitude and one's compliment is its elimination of a duplicate
+representataion for negative zero. The range for a two's compliment
+representation is [2^(n-1) - 1, -2^(n-1)]. The extra range gained from
+eliminating negative zero is added on the right side of zero. Adding negative
+numbers in two's compliment form is simple: add the bits as usual, dropping any
+carried bits from the addition of the most significant bit postition. If the
+first bit is one, the result is negative. Flip the bits and add one to find the
+magnitude of the negative number. This is a simple algorithm to perform
+manually, and it results in simple circuits for addition and subtraction. Sign
+magnitude representations, on the other hand, require advanced circuitry to
+keep track of the sign. Sign extension is also simple in two's compliment,
+involving simply filling the added bits with the value of the first bit of the
+original binary number. This operation commonly occurs when the processor loads
+an 8 or 16-bit value into a 32 bit register. Understanding signed number
+representation makes programmers aware of their range and also of the methods
+the processor uses to interact with them.
+
+Now to consider how instructions are represented in the processor, specifically
+in the MIPS 32 architecture. The MIPS designers followed the 1st design
+principle in standardizing instruction length to 32 bits: "Simplicity favors
+regularity." In keeping with this, we would expect one standard instruction
+format. Given the restriction of 32 bit instruction length, however, the MIPS
+designers found that they could not represent every necessary instruction in
+one format. They compromised in order to keep the 32-bit word length standard,
+and created 3 instruction formats. This brings us to Design Principle 3: "Good
+design demands good compromises." At this point, we have studied two of these
+instruction types: R-format and I-format instructions. R-format instructions
+begin with 6 bits for the op code and these are followed by 3 groups of 5 bits
+holding two source register numbers and one destination register number. The
+remaining 11 bits are occupied by a 5-bit shift amount for logical operations
+and a six bit function description, which extends the op code. I-format
+instructions are identical until bit 16 (op code and two registers, this time
+only one source) and the remaining 16 bits hold large values. This instruction
+format is used for two instruction types that require large values to be stored
+directly in the instruction: immediate value instructions (which require a
+relatively large constant value to be stored directly in the instruction) and
+load/store instructions (which require a memory address). Once the processor
+reads the op code, it knows what format the remaining 26 bits will be in. As
+programmers, if we look at a core dump we can use this knowledge to directly
+decode the machine language: if the first six bits hold 0, for example, we know
+the instruction is R-format and can look at the last six bits to determine the
+exact instruction.
+
+Since machine code instructions are just data that is loaded from memory to be
+executed, they are stored on registers. When an instruction is processed, it
+contains register numbers that are accessed to modify other data. This seems
+cyclical - instructions should never modify a register number that stores
+another instruction, so are the registers that store instructions segmented
+from the registers that store data that is meant to be modified?
+
+Sources:
+
+Dave Cheney (https://dave.cheney.net/2019/08/20/go-compiler-intrinsics)
+
+Stack Overflow (https://stackoverflow.com/questions/4202687/using-assembly-language-in-c-c)

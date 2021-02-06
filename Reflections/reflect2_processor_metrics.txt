@@ -1,0 +1,50 @@
+Analysing processors requires standard metrics that address the meaningful
+areas of performance for a given application. CPU time is one of these metrics.
+Its factors are instructions per program, cycles per instruction, and clock
+rate. The first two factors are primarily affected by programmers, who
+chose the algorithms, programming languages, and compilers to be used in their
+software. All of these choices affect the number of instructions needed to
+complete a task as well as the type of instructions used. Some instruction
+classes require more clock cycles than others, so using the fastest
+instructions possible is important.
+
+Clock rate is set by the processor designers who must balance the interplay
+between clock speed and the number of clock cycles per instruction (CPI), as
+they are directly related and increasing clock speed will generally increase
+CPI which may mitigate any potential decrease in CPU time. Processor design
+also deals with physical limitations, such as the Power Wall, where power
+consumption increases dramatically with clock speed. As a result, parallel
+processing has become the norm, where multiple processors are used to increase
+throughput instead of increasing clock rate to gain response time.
+
+The difference between throughput (instructions completed in a given time) and
+response time (time to complete one instruction) is crucial to selecting the
+correct processor for a computing task. For example, at work I am
+working on a control system with computer vision as the primary sensor input.
+The vision processor must have many cores to process video feed with complex
+algorithms. In the same system, however, there is an MCU that controls an
+actuator. This computer deals only with the minimal input data such as position
+and speed necessary for a PID loop, but must have fast response times to
+accurately and quickly position the actuator. These differing needs lead the
+team members to chose a 6-core Nvidia Jetson for the vision task but a small
+microcontroller optimized for real-time control for the actuator control.
+
+In addition to CPU time, elapsed time for program execution can provide a
+useful alternate metric. Programs with lots of I/O operations will have a
+significant amount of time invested in reading and writing from memory so only
+a part of the program run time is spent on the CPU with memory operations
+occupying an important part. Other operations which involve more arithmatic
+operations are more processor-intensive and CPU time will be the vast majority
+of elapsed time. In the former case the memory bus will be wider, perhaps 128
+bits instead of 64 (Cliff Brake), while in the later case the arithmatic unit
+will be wider, perhaps 64 bits on a 32 bit processor like the MIPS that we are
+studying in class.
+
+In computer systems, how important is it to specialize the processor for
+metrics such as response time versus throughput? In general, can a system
+designed for data processing and high throughput be expanded to handle
+real-time control without adding a specialized processor with low response time?
+
+Sources:
+
+Cliff Brake - A conversation about processors designed for I/O operations
