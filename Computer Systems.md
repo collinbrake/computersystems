@@ -1,5 +1,3 @@
-
-
 # Computer Systems
 
 ## Introduction - 2021-01-11
@@ -10,7 +8,7 @@
 
 - Computer vs Computing
 
-  - Computing is infomormation transformation
+  - Computing is information transformation
   - Most electrical engineers 60 years ago built boxes
   - Most people in the field today do *computing*
 
@@ -729,6 +727,8 @@ Determine whether response time or throughput is more important for each of the 
 
 - In two's compliment you don't need subtraction circuits, can just use addition circuits!!
 
+- ![image-20210226071932600](/home/collin/.config/Typora/typora-user-images/image-20210226071932600.png)
+
 - No double zero problem, **slightly larger range**
 
   - In two's compliment, if the answer is in the range (n-bits), it will be correct. If not, you are out luck!!
@@ -883,19 +883,23 @@ Determine whether response time or throughput is more important for each of the 
 
     - What am I supposed to do?
     - op: operation code
+      - Why does it need 12 bits?
+      - The op code fields are not just being used to say what op code
+      - The first six bits say what format of instruction it is
+      - Most of the time these design decisions are made based on the rest of the circuitry
     - funct: function code (extends op code), 6 bits clear at the end
-  - Ignore shamt (shift amount)
+- Ignore shamt (shift amount)
     - Only used for logical instructions in r format, not addition or others
   - r -> register
   - rs
 
     - source register **number**
     - where do I get things from
-  - rt
-
+- rt
+  
     - second source register **number**
   - rd
-
+  
     - destination register **number**
   - The register file has 32 locations
     - 2^5 is 32
@@ -921,6 +925,8 @@ Determine whether response time or throughput is more important for each of the 
   - Looks at value of op code field to know what format it is in
   - It knows whether to look for an address or an immediate value for an I format
   - ![image-20210205131955949](/home/collin/.config/Typora/typora-user-images/image-20210205131955949.png)
+  - ![image-20210226070944388](/home/collin/.config/Typora/typora-user-images/image-20210226070944388.png)
+  - **[Op code reference sheet](https://www.assemblylanguagetuts.com/mips-instruction-set-opcodes-reference-sheet/)**
   - Then, the processor knows what to expect in the address field
     - After the processor recognizes the op code and thus the format, it is hardcoded on what to do next: Boom.
     - The processor data sheet specifies what op codes correspond to
@@ -934,7 +940,7 @@ Determine whether response time or throughput is more important for each of the 
 
 ### Program Counter (PC)
 
-- **Always hold the address of the next instruction that the processor must execute**
+- **Always hold the address of the next instruction that the processor must execute** (it is a register)
 
   - This address is in memory
 
@@ -946,6 +952,22 @@ Determine whether response time or throughput is more important for each of the 
 
 - We add four because the next instruction is 4 bytes away from the current
 
+- How does the program counter know where the next instruction is at?
+
+  - The program counter (a register) is a dumb device that is there to hold the address of the next instruction
+  - It is up to the rest of the hardware to make sure that nothing but the next instruction is in there
+
+- All the instructions are in order - why do we need the program counter
+
+  - how does the hardware know what the address is?
+  - It turns out that most of the time the address of the next instruction is 4 bytes away
+    - What if you branch, or use a function?
+    - Then you will need to jump
+
+### Instruction Register
+
+- There is a very special register called the instruction register that holds the next instruction as it comes in from the memory
+
 ## 2.6 Logical Operators
 
 - **Logical Instructions** (good tie in)
@@ -954,5 +976,873 @@ Determine whether response time or throughput is more important for each of the 
   - `shamt`
     - `sll` shift left and fill with zeros
     - `sll` is a R-format instruction with 0 in the op code and the funct extension
-- 
+
+## 2.7 Instructions for Making Decisions
+
+- High-level languages offer constructs like
+
+  - if-then
+  - if-then-else
+  - Loops
+  - Switch-case
+
+- Instructions for conditional statements
+
+  - ```assembly
+    beq rs, rt, L1 # Branch on Equal
+    
+    bne rs, rt, L1 # Branch Not Equal
+    
+    J L1		   # Unconditional jump
+    ```
+
+  - Branch is a jump - check equality if the boxes are equal and then jump
+
+  - bne
+
+    - Only jump if the registers are not equal
+
+  - The program counter holds the address of where it should go before it goes
+
+  - ```cpp
+    if (i == j) f = g + h;
+    else f = g - h;
+    ```
+
+    - ![image-20210208132724546](/home/collin/.config/Typora/typora-user-images/image-20210208132724546.png)
+
+    - How does the compiler branch it?
+
+    - ```assembly
+      bne $s3, $s4, LE
+      add $s0, $s1, $s2
+      j LN
+      LE: sub ...
+      LN: ...
+      ```
+
+      - LE and LN are addresses of memory addresses and are calculated by the assembler
+  
+    - It's saying, if not equal, jump over next guy and do a sub
+
+      - If equal, do next and jump over LE to address LN
+
+    - These addresses are memory addresses calculated ...
+    
+  - ```cpp
+    while (save[i] == k) i += 1;
+    ```
+
+    - Variables I and k are mapped to $s3 and $s5
+
+    - Base address of save is mapped to $s6
+
+    - First need to load save[i] to a temporary register
+
+    - ![image-20210208133257994](/home/collin/.config/Typora/typora-user-images/image-20210208133257994.png)
+  
+    - ```assembly
+    j L1 # This is the loop back instruction
+      ```
+
+    - What does the shift logical left do? It always multiples by two. We do it twice which multiples by four
+  
+      - `00010` -> `00100` -> `01000`
+      - 2 -> 4 ->8
+    - `00101` -> `01010` -> `10100`
+    
+  - 5 -> 10 -> 20
+    
+  - Why are we multiplying by four?
+  
+    - to get the byte address
+  
+  - Add the four multiplied by zero to the base address
+  
+  - Always multiply by four to get to the offset of an array
+  
+    - Study this!!!!
+  
+  - **Basic Block**
+  
+    - A sequence of instructions that end in a branch instruction
+    - *There are no branches in the middle*
+      - No ingress or outgress
+    - The compiler identifies basic blocks for optimization
+    - An advanced processor can accelerate execution of basic blocks
+    - We can't make the electronics go faster, but can increase the average execution time by organizing the execution in a certain way
+    
+  - beq/bne
+  
+    - equality testing
+  
+  - slt/slti
+  
+    - often necessary to check if the value of a variable is less than or equal to
+  
+    - slt # set on less than
+  
+    - slti # uses immediate operand, 16 bit constant
+  
+    - ```assembly
+      slt rd, rs, rt
+      # if (rs < rt) rd = 1; else rd = 0;
+      
+      slti rt, rs, constant
+      # if (rs < constant) rt = 1; else rt = 0;
+      ```
+  
+    - Often used in combination with beq, bne
+  
+      - if less than branch to <address>
+  
+  - All instructions that compare two values must know if they are dealing with signed or unsigned numbers
+  
+    - signed
+      - if the left most bit is a one, it must be smaller than anything with a zero in the most significant
+    - unsigned
+      - if the left most bit is a one it must be larger than anything with a zero
+    - sltu
+    - sltiu
+  
+  - MSB (most significant bit) dual meaning
+  
+    - What does this check:
+  
+    - ```assembly
+      sltu $t0, $s0, $s1
+      # certainly $s0 < $s1
+      # also that 0 <= $s0
+      ```
+  
+    - Compilers exploit dual meaning of MSB to check array bounds
+
+## The class goes on in two different ways
+
+- Practice the individual pieces so that they can come together
+
+## 2.8 Supporting Procedures
+
+- Function
+
+  - Call (invoke action)
+
+    - pass the control (program counter) to an instruction somewhere else in memory
+    - update the program counter
+
+  - Return
+
+    - give the control back to the calling routine
+    - Set the program counter back
+
+  - Pass parameters
+
+    - You leave the parameters in a known register (say 4) and let the procedure know that it has to go to register 4 to pick it up
+
+  - Six steps
+
+    - pass parameters to the procedure
+    - transfer control to the procedure
+    - allocate storage for procedure
+    - perform operations of the procedure
+      - now that we have the program counter pointing here
+    - place results in registers for calling program
+    - return control to calling program
+      - not the place where control was transfered to procedure but the one after that
+
+  - Registers
+
+    - <img src="/home/collin/.config/Typora/typora-user-images/image-20210210132432639.png" alt="image-20210210132432639" style="zoom: 50%;" />
+
+    - We use registers to exchange data between the calling function and the called function
+
+      - This data is stored in registers `$a0` through `$a3` by **convention**
+      - If you insist on sticking it in `t4` no one will object
+      - Make the common case fast
+
+    - We need a place to store the values returned from the function
+
+      - `$v0` through `$v1` to store result values
+
+    - Wait a minute, I wrote a piece of code with more than four parameters, what happens?
+
+      - Well, other things are going on.
+      - But, they are trying to make the common case fast
+
+    - They return values to handle the case where an error and a value is returned from a function
+
+    - The last three registers are also useful
+
+      - Before you call a function, the p counter is in the main program
+
+      - Say its an r format instruction
+
+      - then you have to get back to PC + 4 for an r format instruction
+
+      - this PC + 4 address gets copied into `$ra` when the control is transfered to the procedure
+
+      - The last statement (the `return` statement) triggers a 
+
+        - ```assembly
+          J $ra # jump back to PC + 4, location after function call
+          ```
+
+      - What happens if we have nested function call
+
+        - When some guy calls the second function `f2` he will overwrite!!! no good!!!
+        - Stack - last in first out
+        - the stack pointer tells us where we have to pop or push
+        - if you have a nested call, push all the stuff on stack
+          - recover in last order first
+        - manages spilling
+          - 18 parameters to pass
+          - the 14 values get pushed on stack and popped from stack
+        - recursive calls
+
+      - Frame pointer
+
+        - every time there is procedure, it pushes a bunch of stuff to stack, called a frame
+        - frame pointer lets you know where the frame ends
+
+- Instruction for making a function call: `jal`
+
+  - Jump and link
+  - Jump to address
+  - link the PC + 4 to `$ra`
+
+- Instruction for returning from procedure
+
+  - ```assembly
+    jr $ra
+    ```
+
+  - can also be used for computed jumps in a case/switch statement
+  
+- Supporting Recursion
+
+  - Push stuff on stack and pop back in that order to handle nested function calls
+
+- Conventions
+
+  - Preserved
+    - Saved registers: `$s0-$sy`
+      - If you are a function you need to save and restore these registers
+      - in the example above, they also saved and restored temp registers
+  - Not preserved
+    - temp
+    - arg
+    - return val
+    - stack below the stack pointer
+      - It's ok to clobber these
+
+- Local variables
+
+  - goes on stack or heap
+    - part of the same memory, used in different ways
+
+- $fp points to the first word of the frame, often a saved argument register, and the stack pointer $sp points to the top of teh stack
+
+- Register 1 is used by the compiler for a specific purpose - store large constants
+
+- Memory Allocation Convention
+
+  - Stack ->
+  - <- Dynamic data
+  - Static data
+    - Global variables
+    - Two pointers
+      - Stack pointer
+      - Heap pointer
+        - new
+        - malloc
+  - Text
+  - Reserved
+
+- Convention #keyword
+
+  - As programmers, if we use good coding conventions we will write better code, better organized and more readable/reproducable
+
+### Main Ideas of Procedures
+
+- Steps of executing a procedure
+  - Give procedure access to parameters
+  - Transfer control to procedure
+  - Acquire the storage resources needed for procedure
+  - Perform the task
+  - Put the result value in a place where the calling program can access it
+  - Return control to the point of origin
+    - A procedure can be called from multiple points in a program
+- Step 1
+  - Argument registers `$a0 - $a3`
+- Step 2
+  - `jal` jumps to address where procedure starts
+  - Saves instruction (address) after calling location (PC + 4) in a register
+- Step 5
+  - Value registers `$v0 - $v3`
+- Step 6
+  - Return address register `$ra`
+  - Unconditional jump to register: `jr $ra`
+
+## 2.9 Communicating With People
+
+- Handling characters - extrememly importnat for communicating with humans
+- American Standard Code for Information Interchange (ASCII)
+  - 128 characters (7 bit representation)
+    - 95 graphic
+    - 33 control
+      - newline, ring a bell
+  - Popular when we had one-byte character
+- Unicode
+- Latin-1
+
+### Byte and Half-word Instructions
+
+- lb rt, offset (rs)
+- lbu rt, offset(rs)
+- lh rt
+- Immediates
+  - lui
+
+### Strings
+
+- Strings
+
+  - first bit in ascii is always zero
+    - A word has four bytes - don't want to waste
+  - 3 options
+  - Packing
+    - pack, shift, or
+    - Application: encoding for CAN bus
+
+- String copy
+
+  - ```assembly
+    addi $sp, $sp, -4
+    sw $s0, 0($sp)
+    add $s0, $zero, $zero // initial condition
+    L1: 
+    ```
+
+## 2.10 MIPS Addressing for 32-bit Immediates and Addresses
+
+### Bit Packing
+
+- Handling 32 bit constant
+  - lui $s0, constant
+    - copies 16-bit constant to the left 16 bits of rt
+    - clears right 16 bits of rt to 0
+  - ori $s0, $s0, 2304
+    - puts zeros in upper 16 bits and ors
+  - Either the compiler or the assembler must do this
+  - The programmer needs to be aware
+
+### Addressing Modes
+
+The way by which MIPS can get to the operands it has to work with
+
+Names for accessing nodes
+
+#### Branch Addressing - I-Format
+
+- op code, two registers, target address **I-Format**
+  - target address can be positive or negative
+  - That is why we need a signed number to represent target address
+- PC-relative addressing
+  - Take the current value of program counter and add 16-bit offset x 4 because that is a word address
+  - PC serves as anchor
+  - Is already implemented by four
+  - By the time the program is executed, the PC has already been incremented by four
+    - If we branch somewhere else, account for that
+    - common case fast
+- bne / beq
+  - can be rewritten
+
+#### Jump-Addressing or J-Format instructions
+
+- op, 6 bits
+
+- address, 26 bits
+
+  - treat it as a word address to get two extra bits!!!
+
+- Jump j and jal can be anywhere in text segment
+
+- ```assembly
+  Loop: sll $t1, $s3, 2
+        ...
+        j Loop
+  
+  ```
+  
+- You only have 26 bits left after op code for address
+
+  - We do a trick here
+  - treat these bits as a word address
+  - sneak in another two bits
+
+- You will always have a jump when you are in a loop
+
+  - words are four bytes apart in a 32-bit machine
+
+### Everything is an Address
+
+- Once we have an address, we can get the instruction stored there or the operand there
+
+### Addressing Modes
+
+- Immediate addressing
+
+  - ```assembly
+    op rs rt <immediate>
+    ```
+
+- Register addressing
+
+  - ```assembly
+    op rs rt rd ... funct # rs -> Register
+    ```
+
+  - which of the 32 registers should the source come from?
+
+  - also target and destination
+
+- Base addressing
+
+  - ```assembly
+    op rs rt <address>
+    ```
+
+  - base address of the array and the offset value (immediate operand)
+
+  - byte, halfword, or word
+
+- PC-relative addressing
+
+  - ```assembly
+    op rs rt <address>
+    ```
+
+  - offset from PC
+
+- Pseudodirect addressing
+
+  - ```assembly
+    op <address>
+    ```
+
+- ![image-20210215132935808](/home/collin/.config/Typora/typora-user-images/image-20210215132935808.png)
+
+- The first three guys are all about getting operands
+
+- The last two are instruction addressing modes
+
+  - takes immediate value. Adds to PC to get instruction
+  - Jump
+    - more bits for the address - 26 word address that looks like 28 for a byte address. Add four of PC to get 32
+
+- Memory mapped
+
+  - I/O mapped I/O is the alternate scheme
+    - 2K or so of memory designated for IO
+
+## Parallelism and Instructions: Synchronization
+
+- Race condition:
+
+  - Two processors sharing an area of memory
+  - P1 writes, then P2 reads
+  - Data race if they don't synchronize
+  - Result is variable based on the order of access
+
+- Hardware support to solve data races
+
+  - Atomic read/write memory operation
+  - No other access to the location allowed between the read and write
+  - If I am going to do it, do the whole thing properly, otherwise cancel the whole thing
+  - Instructions for atomic operations - synchronization
+
+- Load linked
+
+  - ```assembly
+    ll rt, offset(rs)
+    ```
+
+- Store conditional
+
+  - ```assembly
+    sc rt, offset(rs)
+    ```
+
+- Example
+
+  - ```assembly
+    try: add $t0, $zero, $s4
+         ll 
+    ```
+
+
+## Design Principles
+
+- Simplicity favors regularity
+- Smaller is faster
+- Make the common case fast
+- Good design demands good compromises
+
+## 3: Arithmetic and Exceptions
+
+- Fetch-decode-execute
+
+  - Instruction register
+
+- Overflow
+
+  - If you add a negative number to a positive, overflow CANNOT happen
+  - If you add a positive with a positive and get a negative OVERFLOW HAPPENED
+    - This is an all-in-one test for overflow, because the next-to-most significant bits of the operands will always be one and result in a one in the most significant bit of the result if overflow happens.
+    - This is because each must be at least half of the range for overflow to happen, so the next-most sig will always hold a one because range doubles with each bit
+  - If you add a negative with a negative and get a positive OVERFLOW HAPPENED
+  - Exceptions on MIPS
+    - Exception program counter
+    - Its a program counter (holds the address of an instruction)
+      - An instruction that caused an exception to occur
+      - Jump to a predefined handler address
+      - mfc0 (move from coprocessor reg) instruction can retrieve EPC value, to return after corrective action
+  - Exceptions in ARM
+    - CPSR (processor status register)
+    - has a flag that indicates overflow
+    - interrupt disable bits I and F
+
+- Arithmetic for Multimedia
+
+  - Graphics data is often 8 or 16 bit
+  - Have a 64 bit adder with partitioned carry chain
+    - operate on 8x8 bit or 4x16 bit or 2x32 vectors
+  - SIMD (single instruction, multiple data)
+  - When an overflow happens, WE DONT CARE
+    - just saturate the thing and be over with it!!!
+    - It will just be a little blip in the video rendering
+    - This is specific to the multimedia domain
+
+- Multiplication
+
+  - ```assembly
+    1000 # multiplicand
+    1001 # multiplier
+    1001000 # product
+    ```
+
+  - Length of product is the sum of the operand lengths
+
+  - 32-bit number and 32-bit number will create 64 bits
+
+  - Where do we store it???
+
+    - 64-bit adder (ALU)
+
+    - shifters (left and right)
+
+    - control test (are you a one or a zero?)
+
+    - shift and add to the product until now
+
+    - <img src="/home/collin/.config/Typora/typora-user-images/image-20210219132717058.png" alt="image-20210219132717058" style="zoom: 80%;" />
+
+    - ![image-20210219132740605](/home/collin/.config/Typora/typora-user-images/image-20210219132740605.png)
+
+    - Why is multiplication expensive?
+
+      - We have to wait for this thing to go tick, tick, tick 32 times and do the partial product and add
+      - There are other tricks to organize bits in tree structure and do stuff in parallel, **pipelining**
+
+    - Multiply instruction
+
+      - ```assembly
+        mult rs, rt # two 32-bit numbers
+        ```
+
+      - MIPS has two 32 bit registers called HI and LO
+
+      - HI: stores most sig 32 bits of product
+
+      - LO: least sig 32 bits
+
+      - ```assembly
+        mfhi rd / mflo rd
+        ```
+
+      - Move from HI/LO to rd
+
+      - can test HI value to see if product overflows 32 bits
+
+      - Just give 32
+
+    - MUL is different than MULT
+
+      - It is R-format
+
+      - only gives 32 bits
+
+      - ```assembly
+        mul rd, rs, rt
+        ```
+
+  - Division
+
+    - Restoring division
+      - if the sign of the remainder is negative, pretend we didn't do the last one
+    - Non-restoring division
+      - look ahead to make sure we don't get a negative remainder
+    - **We are stuck with two answers again, but for a different reasons!!!!**
+      - MIPS uses HI/LO again!!!!
+      - Again, this is a sequential circuit, not a /// circuit
+
+### Floating Point Numbers
+
+- Why did they call it floating point?
+  - Because the point can actually move!!!
+  - If you have a fixed number of bits, you can only represent numbers in fixed point up to some accuracy
+  - If you have a finite number of bits, there are infinite numbers in between that you cannot represent
+  - Processor designers recognized early on that our computers need to represent numbers that are very very tiny, and also very very large numbers (like Avogadro's number)
+- Do something unusual before you write your reflections
+  - Go to The Power of Ten on Youtube
+- Non-integer numbers, real numbers
+  - Scientific notation
+    - Normalized/Not normalized
+      - Normalized: one non-zero digit in front of the decimal point (base 10)
+      - You have to know if a number is normalized and then have a process to make it normalized
+      - ![image-20210222132323999](/home/collin/.config/Typora/typora-user-images/image-20210222132323999.png)
+      - save bits by leaving off leading one
+      - types float and double in c
+      - Advantages
+        - simplifies exchange of floating point data
+          - only need to send accuracy and power
+        - simplifies floating point arithmetic operations
+        - increases accuracy of the numbers that can be stored in a word
+    - Bits
+      - Sign bit
+        - **We are going to use sign magnitude in this case because it is simpler**
+      - Exponent
+        - We technically need a sign bit for this.
+        - Use biasing instead
+      - Fraction
+    - There is a complex trade-off between range and precision
+      - more bits for precision improves precision
+      - more bits for exponent improves range
+      - if you increase one, the other must decrease
+        - cannot get around this by adding 
+    - IEEE
+      - Institute for Electrical and Electronic Engineers
+      - Standard 754-1985 for floating point
+      - Portability for scientific code
+      - Single-precision - 32 bits
+        - Use 8 bits for exponent.
+        - Use 23 bits for fraction
+      - Double precision - 64 bits
+        - Use 11 bits for exponent
+        - Use 52 bits for fraction
+    - Bias for negative exponent representation
+      - excess representation
+      - for single precision, it says
+        - to represent 2^0, do 2^127
+        - to rep.            2^1, do 2^128
+        - Single: Bias = 127; Double: Bias = 1023
+    - Question
+      - Why don't they use bias for 
+    - Floating point operations are performed on a co-processor, not the main processor.
+      - If you are doing machine learning on a GPU designed for rendering, you will most likely be using floating point operations
+      - Then, exceptions would occur at saturation (???) if the co-processor is designed for it
+    - Normalized Significand
+      - 1.0 < significand < 2.0
+    - Reserved exponents (both single and double precision)
+      - all zeros
+      - all ones
+      - what are they used for? reserved for processor
+        - when the exponent is all ones and the fraction is all zeros, +/- infinity
+          - can be used in subsequent calculations, avoiding need for overflow check
+        - NAN
+          - exponent is all ones and fraction is not all zeros
+        - When exponent is all zeros
+          - denormal numbers
+          - allow for gradual underflow, with diminishing precision
+    - Smallest value
+      - exponent: 000...001
+      - actual exponent = 1-127 = -126
+    - Largest value
+      - exponent: 111...110
+      - actual exponent = 254-127 = 127
+    - Variable precision arithmetic - build data types that give you more precision than standard single or double data types
+      - If you need accuracy more than 6 decimal places, don't use float
+        - 23xlog10(2) = 23*0.3 = 6
+      - double goes to 16
+    - Example: -0.75
+      - -0.75 = (-1)^1 * 1.1(bin) * 2^-1
+        - 0.75 = `1*1/2` + `1*1/4`
+        - 0.11 (bin)
+      - exponent = -1 + bias
+        - single: -1 + 127 = -126 = 01111110 (bin)
+        - double: -1 + 1023 = 1022 = 01111111110
+      - <img src="/home/collin/.config/Typora/typora-user-images/image-20210224130533029.png" alt="image-20210224130533029" style="zoom:67%;" />
+    - Example: 11000000101000...00
+      - sign = 1
+      - fraction = 01000...00
+      - exponent = 10000001
+      - x = (-1)^1 * (1+0.01) * 2^(129-127)
+        - = -5.0
+- Floating point operations
+  - Addition
+    - cannot do the carry method as with two's compliment
+    - implemented in hardware
+      - make sure that the exponents match
+      - re-normalize results at end
+      - check for overflow underflow
+    - ![image-20210224131828284](/home/collin/.config/Typora/typora-user-images/image-20210224131828284.png)
+  - Multiplication
+    - almost as hard as addition
+- RISC processors do not support floating operations
+  - They use a co-processor
+  - Share a subset of registers for data exchange
+  - Extends the ISA
+  - Original MIPS had 32 single-precision registers
+  - 16 double precision pairs
+  - `$f0 - $f31`
+  - Floating point instructions work only on the floating point registers
+    - `lwc1, ldc1, swc1, sdc1`
+      - load word co-processor 1, store double co-processor 1
+  - Specify at the instruction level whether you want single or double precision
+    - div.s
+    - sub.s
+    - mul.s
+- IEEE 754 offers four modes for rounding to let programmer pick desired approximation
+  - Two extra guard bits: GUARD and ROUND
+  - Four rounding modes
+    - Always round up
+    - Always round down
+    - Round to nearest even number
+    - Truncate
+    - ...
+- Go to "What every computer scientist should know about floating point numbers."
+- Left/right shift can replace integer divide by power of 2
+- Floating point is not associative
+  - (A+B) + C != A + (B + C)
+- Multi-threaded programming
+  - Parallel programming may interleave operations in unexpected orders
+- `addiu`
+- Intel Pentium FDIV bug
+  - Colwell, the Pentium Chronicles
+
+### Conclusions
+
+- Bits have no inherent meaning
+  - things fall into the right place at the right time
+- Computer reps of numbers
+  - finite range and precision
+  - need to account for this in programs
+
+## Chapter 4: The Processor
+
+This is where we learn how processors can execute millions of instructions per minute. ISA and compiler determine instruction count. CPI and cycle time determined by hardware.
+
+In this chapter, we study two implementations in MIPS:
+
+1. Simple one
+2. Realistic one (with pipelining)
+
+### Simple MIPS implementation
+
+- Focus on a small subset of instructions
+  - Memory access: `lw, sw`
+  - Arithmetic, logical: `add, sub, and, or, slt`
+  - Control/transfer: `beq, j`
+  - Shows most aspects
+- Magic words for this chapter
+  - Datapath
+  - Control
+  - We are trying to understand the Fetch-Decode-Execute cycle
+    - ![image-20210224134151987](/home/collin/.config/Typora/typora-user-images/image-20210224134151987.png)
+- Logic Design Basics
+  - Information encoded in binary
+    - Low voltage = 0, high = 1
+    - One wire per bit
+    - Multi-bit data encoded on multi-wire buses
+  - Life starts with logic gates
+    - Combinational Elements (AND, OR, XOR, NAND)
+      - Adder
+      - ALU (Artihmetic and Logic Unit)
+        - Seems to have a control bit F like multiplexer
+      - A multiplexer
+        - Y = F(A, B)
+        - the control (selector) bit F tells whether Y should follow A or B
+    - Register
+      - use clock signal to determine when to update the stored value
+      - Used when stored value is needed later
+      - Edge-triggered
+- Clocking
+  - When the clock rises, there are signals switching from zero to one and vice versa
+    - Settling time
+    - Q is sent out of the registers
+  - When the clock falls, the data is written into the registers (D)
+    - Data is latched to the relays
+- Combinational logic transforms data during clock cycles
+  - Between clock edges
+  - input from state elements
+  - output to state elements
+  - longest delay determines the clock period
+- Fetch/Decode/Execute
+  - This is the old picture
+    - ![image-20210226131308670](/home/collin/.config/Typora/typora-user-images/image-20210226131308670.png)
+  - This is the new picture
+    - ![image-20210226131352671](/home/collin/.config/Typora/typora-user-images/image-20210226131352671.png)
+  - We are diving into the processor to see what actually happens in the FDE cycle
+- FDE
+  - Fetch
+    - Take the address in the program counter (register) go to memory (stored program) and fetch encoded instruction (R/I/J format)
+    - It sits in the instruction register
+  - Decode
+    - Register numbers - register file, read registers
+    - cloak rack
+      - here is the register number, give me the content
+  - Execute
+    - Depends on instruction
+      - typical R-format uses ALU unit
+        - arithmetic result
+        - memory address for load/store
+        - branch target address
+      - Access data memory
+  - ![image-20210226131710816](/home/collin/.config/Typora/typora-user-images/image-20210226131710816.png)
+- Key Principles
+  - ![image-20210226132152542](/home/collin/.config/Typora/typora-user-images/image-20210226132152542.png)
+  - I Format instruction execution
+    - The ALU does the PC relative addressing
+  - We can't just join wires
+    - we don't want a logical OR at each junction
+    - We need multiplexers
+      - The ALU uses an operand either from the immediate operand or the instruction
+      - The control unit is a multiplexer that takes the instruction op code to tell whether it should mux the instruction data to the ALU or the output of reading the rd register to the ALU
+        - The control unit is a full state machine that turns the instruction op code into an output signal
+  - ![image-20210226133640496](/home/collin/.config/Typora/typora-user-images/image-20210226133640496.png)
+  - Control instructions
+
+### Data path
+
+- All the areas that an instruction and the data (read from memory based on address stored in instruction) flows through before it is finished
+- You cannot talk about the data path without discussing control
+- Registers, ALU, mux's, memories
+- Build the data path (FDE)
+  - What are the abstractions in a data path?
+    - Instruction memory
+      - An address comes in
+    - PC
+      - Registers
+      - Signals to poke stuff in and out
+    - ALU
+      - This thing never gets called more than once
+- PC
+  - Sends out an address
+  - Gets updated by the Adding unit that can only add four
+  - Put the PC+4 back in the PC
+  - ![image-20210226134227688](/home/collin/.config/Typora/typora-user-images/image-20210226134227688.png)
+
+- This part of the processor is responsible for **fetch**
+
+
 

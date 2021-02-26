@@ -1,0 +1,71 @@
+Procedures are the fundimental tool of abstraction. Programmmers use them all
+the time, so it is worth understanding how the compiler translates them into a
+format that the processor can understand and the specific techniques that the
+processor uses to execute complex procedures with simple instructions. In
+addition, this discussion will lead to the subject of memory management,
+specifically the stack, which is a concept that programmers utilize directly
+for any software project.
+
+What happens when a procedure (function) is called? In a high-level language,
+there is generally a parenthesis-enclosed list of arguments that are passed to
+the function. As the first step in executing a procedure, the processor must
+give it access to these parameters. The second step is to transfer control to
+the procedure. The third and fourth steps are to acquire memory for the
+procedure and perform the task. The resulting value is placed in a register
+where the calling program can access it for step 5. Finally, control must
+branch back to the next instruction in the original calling program,
+remembering that the procedure can be called from multiple locations in a
+program. In order to give procedures access to their parameters, the MIPS
+designers set aside four argument registers ($a0 - $a3) so that any function
+with less than four arguments can directly store its parameter addresses in
+these registers. Naturally we wonder what happens for a five or more parameter
+function - this case is handled with additional steps. When control is
+transfered to the function, the address of the next instruction to be exected
+in the main program after the function returns must be stored: MIPS has a
+special register for this too, called $ra for return address. MIPS also pulls
+out a special instruction for this occasion. Jump-and-link (jal) stores off PC
++ 4 to the $ra register (the link step) and jumps to the address specifying the
+start of the procedure, effectively transfering control to the procedure. PC is
+the Program Counter value, which is simply the address of the current
+instruction, and the addition of four gets to the next instruciton in a
+byte-addressable 32-bit architecture since 32/8 = 4. After memory has been
+allocated (step 3) and the task has been performed (step 4) the resulting
+values are stored to two dedicated return value registers $v0 and $v1. The MIPS
+architecture dedicates two registers for return values to make the common case
+fast - there are many, many functions that return two parameters, an error code
+and a result value. At this point, the program counter is unconditionally set
+to the address stored in $ra and control is returned from the callee to the
+caller.
+
+Since we only have 32 registers, our neat little procedure above just clobbered
+data from the calling program when it utilized the same registers for its own
+processes. Fortunately the above outline of procedures is not all that happens,
+and procedures in the MIPS architecture are responible citizens who store off
+data in registers before they overwrite it with their own. The only place to
+store data from registers is memory, so the processor spills all register
+values to memory, specifically the stack, when it calls a procedure. The stack
+is an ideal memory structure for spilling to memory, because it stores in LIFO
+(last in, first out) order. The stack pointer keeps track of the top of the
+stack. This special address is stored in register $sp. The stack pointer starts
+at high addresses and moves to lower addresses as the stack grows, because the
+heap starts at the bottom and grows up. As a result, when a register value is
+pushed to stack, the pointer is decremented by one word length. When an
+instruction is popped back off the stack, the pointer is increased. In assembly
+code, pushing register values to stack involves the store word (sw) with the
+stack pointer (and possibly an offset) as the destination address in the 16 bit
+field of this I-format instruction. Inversely, popping register values back off
+the stack involves load word commands.
+
+Using this stack data structure, something really cool happens when we think
+about recursion as a programming technique. When a function calls itself
+recursively, each function call means pushing the register data from the
+previous call to stack, so the stack grows larger and larger until the
+recursion ends, at function call N. What happens next? Well, since the stack is
+arranged in LIFO order, When function N goes to do its clean up and restore the
+register state for function N-1, it finds the register data for function N-1 at
+a very convenient location, right at the top of the stack. It pops that data o
+off, and function N-1 in turn finds the data for function N-2 at the new stack
+pointer address and pops IT off, and the sequence goes pop, pop, pop back to
+function 0. This is the beauty of LIFO data storage, and makes me want to
+impliment recursion more just because of this concept! Is recursion generally
+more efficient than loop control flow? If so, do compilers ever optimize loops by using recursion or the stack?

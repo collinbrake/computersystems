@@ -1,0 +1,98 @@
+Fundimentally, computers do one thing: math. Given the immense variety of uses
+for computers, calling them number-crunching machines may seem limiting, but
+then we have to consider the prevelence of numbers and math in the universe.
+Everything can be described by numbers. Avogadro's number is used in chemistry
+to calculate molecular weights but can also describe a distance in meters that
+spans many galaxies around our own. At the other end of the spectrum, the
+nucleus of a carbon atom is on the order of 10^-13 meters wide (Powers of Ten).
+Computing is the science of handling all these numbers and turning them into
+useful results. In the 1940's and 50's, NASA hired a team of people as
+"computers" to perform hand calculations for the flight trajectories of Alan
+Shepherd's orbit and the Apollo 11 mission (Human Computers). Today, we have
+machines based on digital circuits that can far exceed human capabilites in raw
+computations. Machine learning has also enabled computers to perform complex
+tasks such as language translation and route planning for autonomous vehicles,
+but these abilites all come back to arithmatic operations.
+
+How do computers represent numbers? As discussed, the universe contains a huge
+range of numbers across 40 powers of ten that must be represented. To hold 40
+powers of ten in binary form would require around 44 binary digits, more than a
+typical 32-bit representation. Even with a larger number of digits, precision
+is still an issue, because there will always be an infinite number of real
+numbers between the smallest increment we can achieve with a finite
+representation. To gain maximum precision in a finite-length number
+representation, computer scientists use floating point numbers, where the
+number of bits after the radix point can be adjusted according to the size of
+the number. To hold Avogadro's number, most of the bits would be before the
+radix-2 point, whereas to hold small numbers such as the size of a carbon
+nucleus in meters, more of the bits would be after the radix point. This is
+consistent with how significant figures are handled by scientists and
+engineers. Multiplying a 32-bit float that holds a very large number with a
+another that holds a very small number will result in 32 significant bits, with
+the radix point somewhere in the middle. Computer scientists and engineers must
+be aware of how floating point numbers are handled by computer processors to
+avoid round-off error. When extreme precision is required, a custom class
+should be implimented that stores the digits before the radix point as a
+64-bit integer and holds the digits after the radix point in another 64-bit
+integer.
+
+After we have numbers in floating point representation, the next step is to
+apply basic arithmatic operations. Multiplication and division are implimented
+in MIPS with sequential circuits. Multiplication of two 32-bit numbers requires
+a 64-bit register for the product to hold the full range, since the length of
+the product in multiplication is the sum of the operand lengths. The MIPS-32
+architecture supports this by reserving two special registers for the product
+of multiplication, called HI and LO, where HI stores the 32 most-significant
+bits and LO stores the remaining, least-significant 32 bits. Division produces
+two results, the quotent and remainder. The MIPS designers decided to store
+these two values in the same HI and LO registers. Simplicity favors regularity,
+and this is applied over and over in the MIPS architecture. Mulitiplication and
+division use sequential circuits that follow an algorithm of multiply, shift
+the result, and add it to the partial product until all the digits of the
+multiplier have been multiplied with the multiplicand. In practice, however,
+this simple algorith is very slow. Pipelining is used to stream a
+multiplication operation through more than one circuit, in application of one
+of the eight great ideas of processor architecture: "Performance via
+Pipelining".
+
+In multiplication and division, overflow is not possible when the HI and LO
+registers are used. In addition and subtraction, however, overflow is possible
+and must be detected. In two's compliment signed representations, negative
+numbers always start with a one, and positive numbers always start with a zero.
+This fact can be used to create elegantly-simple overflow tests. If the
+addition of two positive binary numbers overflows, the most significant bit of
+the result must be a one. This is due to the fact that if the addition
+overflows, the combined operands must be big enough so that their bits will
+carry into the most significant place, resulting in a negative sum of two
+positive numbers. Similarily, if the addition of two negative numbers
+overflows, a positive two's compliment representation will result. If a
+positive number and a negative number are added, overflow is not possible. The
+three rules outlined above cover every case of addition, and the rules for
+subtraction overflow detection are a duality of these. Binary computing, and
+specifically the two's compliment represenation of signed values, make overflow
+detection very simple. This is crucial when implimenting digital circuits,
+because they are most efficient in performing very simple operations.
+
+After overflow is detected, the regular flow of control must be diverted by an
+exception. In MIPS, the address of the offending instruction is stored in a
+register called the Exception Program Counter (EPC). A jump instruction then
+unconditionally branches to a handler address where the operating system takes
+control and determines if the program should be halted or resumed. If resumed,
+the next instruction can be found at EPC + 4. Some programming languages such
+as Go react to overflow, while languages such as C ignore it (GODocs). All processors
+throw exceptions when overflow occurs, but programmmers must understand how the
+languages they write code in deal with these exceptions. Graphics cards are a
+special case where the processor does not fire an exception on overflow. If a
+rendering operation overflows an integer that represents the intensity of a
+pixel, the GPU knows to simply saturate the value and keep going. An exception
+is useless in this case. GPU's are not always used for render operations,
+however. If a GPU is used in applications like machine learning, it seems like
+the higher level programs might want to know if overflow occured. Perhaps these
+operations involving large matrices are not affected enough by occasional
+overflow to worry about exceptions in this case either.
+
+Sources:
+
+Human Computers, https://www.history.com/news/human-computers-women-at-nasa
+
+GODocs, https://golangdocs.com/integers-in-golang#integer-overflow-in-golang
