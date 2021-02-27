@@ -1781,7 +1781,7 @@ In this chapter, we study two implementations in MIPS:
     - Settling time
     - Q is sent out of the registers
   - When the clock falls, the data is written into the registers (D)
-    - Data is latched to the relays
+    - Data is latched to the registers
 - Combinational logic transforms data during clock cycles
   - Between clock edges
   - input from state elements
