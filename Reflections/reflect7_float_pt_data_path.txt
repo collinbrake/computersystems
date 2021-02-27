@@ -1,0 +1,103 @@
+In class this week we covered two very important topics related to computing:
+floating point number representations and the processor data path, specifically
+the fetch-decode-execute cycle. Floating point numbers are the standard method
+for representing real numbers in computers. The data path controls the flow of
+the fetch-decode-execute cycle in the processor and is the basis for all its
+functionality. Understanding floating point representations allows computer
+scientists and engineers to avoid mistakes in numeric operations. Grasping the
+architecture of the processor data path is important, not only because it forms
+the backbone of computer, the basic tool used in these professions, but also
+because understanding this complex system prepares us as engineers and
+scientists to understand other systems in the world, especially computing
+systems.
+
+Real numbers in a computer are represented in 32-bit (single precision) or
+64-bit (double-precision) floating point format, which is composed of three
+parts. This number format is in sign-magnitude form, so the first bit of the
+string is always reserved for the sign, with zero denoting a positive sign. A
+section of bits after the sign bit is the exponent. This is the power of two
+that the result is multiplied by, and can be negative or positive. This signed
+value is represented in bias format to eliminate the need for a sign bit. The
+bias is subtracted from this field to find the actual exponent, so any values
+less than the bias will end up as negative. The third element of floating point
+representations is the mantissa and holds the significant digits after the r
+radix point in normalized form (one digit before the decimal point, the shift
+amount is held in the exponent field). Since the single digit before the radix
+point in a normalized binary value will always be one, this is excluded from
+the mantissa to save bits. Due to the relative complexity of this numeric
+representation, the multiplication and addition circuits for floating point
+values are more complicated than those for unsigned or two's compliment
+integers.
+
+The industry standard for floating point representations is IEEE 754. Almost
+every processor complies with this standard, which allows portability of
+floating point algorithms between machines. If a program using floating point
+values is run on processor A and then on processor B with identical inputs, the
+floating point results will be exactly the same bit pattern as that recieved
+from processor A. This is very important for both the scientific community and
+for the software industry. The IEEE 754 standard specifies 8 bits for the
+exponent field in single precision floating point representions, and 11 bits of
+exponent for double precision. The bias is 127 for single precision and 1023
+for double precision. This leaves a 23-bit mantissa for single precision and 52
+bits of accuracy for double. IEEE 754 also provides for management of the
+rounding error inherent to floating point operations. It has four rounding
+modes that are appropriate in different types of operations and specifies guard
+bits to mitigate rounding error. Computer scientists must be aware of these
+options and safeties, especially when performing sensitive operations such as
+interval arithmetic (Goldberg). Outside of the IEEE standard, there are other
+methods to avoid innaccuracies introduced by rounding error. The subtraction of
+near values can lead to cancellation of all bits except for the least
+significant bits, which may be innacurate from round-off, leading to high
+relative error in the calculation. Rearranging the order of floating point
+operations can prevent this cancellation. For example, instead of calculating
+x^2 + y^2, a programmer can use the equivalent expression (x + y)*(x - y) to
+avoid what is called catastrophic cancellation (Goldberg). Intelligent handling
+of floating point values is fundimental to responsible computing.
+
+Moving on to the fetch-decode-execute cycle, we break the processor into its
+modular components: the instruction memory, register file, and data memory.
+Between these black boxes of functionality, the data path carries information
+from one operation to the next, routing bits through multiplexers to their
+destinations in the control flow. This flow of information is synchronized by a
+high-frequency clock, with circuits detecting the rising and falling edges of
+the periodic square wave produced by the clock. At a rising edge, bits are
+streamed in parallel out of the registers that held them after the last
+operation and through arithmatic and logic circuits. At the falling edge of the
+clock, all operations have been completed and the new bit streams are latched
+into registers again. Arithmetic operations must be consitently fast across a
+processor since the clock frequency must be throttled to accomodate the slowest
+class of operations. The fetch-decode-execute cycle starts at the instruction
+memory "black box" where the address stored in the program counter register
+(PC) is accessed to pull the next instruction from memory into the instruction
+register in the fetch step. Next, the program is decoded: the multiplexers in
+the data path use the op code from the instruction as signal bits to provide
+the input for the following operation from an immediate operand (for I-format
+instructions) or from a register (R-format). The operation that follows is
+performed by an Arithmatic and Logic Unit (ALU) which can perform many
+operations such as addition for the add instruction or calculating a memory
+address as for a branch instruction. The results from the ALU are stored to the
+data memory, and the program counter is incremented by 4 to access the next
+instruction.
+
+Floating point values hold the numbers used in computation, and the processor
+and data path perform low-level operations on them that allow us to manipulate
+these values in programs. The processor is split into many different modular
+pieces. Jim Keller, a leading engineer in the processor design space, says that
+this modularity is crucial for good design. Humans are not smart enough to
+design something like a computer processor as one single system he says, so
+designers split the system into manageable pieces that can be reasoned about
+separately. The more contained these systems are and the cleaner the interface
+between them, Keller states, the better the resulting system when the pieces
+are combined. As computer engineers and scientists in training, learning about
+the parts of a computer processor prepares students to build complex systems,
+whether the processor itself or hardware and software systems built on top of
+the processor.
+
+References
+
+Goldberg, D. (1991, Mar.) What every computer scientist should know about
+   floating-point arithmetic. Association for Computing Machinery.
+   https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
+
+Keller, Jim (2021, Feb. 18) The future of computing, AI, life and conciousness.
+   Lex Fridman Podcast. https://www.youtube.com/watch?v=G4hL5Om4IJ4
