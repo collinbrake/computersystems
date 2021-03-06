@@ -1,0 +1,122 @@
+Modern processors are a pinacle of scienctific and engineering endeavor, 
+compressing some of man's most complicated systems into tiny form factors. This 
+system engineering requires strict organization, and a study of this 
+organization is useful to gain technical knowledge about computers as well as 
+to understand overaching design principles that apply to the whole practice of 
+engineering. The processor is the core of a computer, and every program a 
+computer runs depends in some way on the organization of the processor. 
+Compilers and operating systems interface direcly with the processor, and 
+higher-level programs in turn depend on a compiler and operating system, making 
+an understanding of the processor very useful for computer scientists. Computer 
+engineers work direcly with hardware at times, so it is even more important 
+that they grasp processor organization. Beyond technical knowledge, the design 
+of the computer processor incorperates many principles that, when applied to 
+sofware design or any other engineering field, will produce systems as 
+efficient and as organized as the computer processor. In this essay we will 
+discuss the machinery of a processor and data path that links its components 
+together, forming a complex network like the Interstate System. After looking 
+at several examples of the variety of paths that an instruction may take on 
+this processor interstate system, we will show how pipelining improves the 
+throughput, or the number of instructions that are executed in a 
+given time. Finally, this will all provide the basis for a discussion of the 
+underlying design principles of the computer processor.
+
+All of the components in a processor are abstractions that hide implimentation 
+details while exposing an interface through which communication takes place 
+with other abstractions in the processor. The first abstraction is relatively 
+simple: the program counter. It increments itself by four every instruction and 
+occasionally branches beyond the next instruction word to another memory 
+location. The instruction memory, our next abstraction, uses this address to 
+read the next instruction. Based on the instruction op code (and the funct 
+field in an R-format instruction) a combination of events follows. The next 
+abstraction involved is the register file which sits between the decode and 
+execute steps and handles all reading and writing to registers. Next, the ALU 
+performs calculations or logical operations. The data memory abstraction 
+conditionally takes the result from the ALU. If the result represents a memory 
+location, the data memory either reads from or writes to that location. All of 
+the paths between these abstractions are 32 bits wide in a 32-bit architecture. 
+This data path, involving functional units connected by 32-bit channels, 
+however, cannot function on its own. For example, what in the processor decides 
+whether the second input to the ALU comes from a register or from an immediate 
+value? Orchestrating the flow of data is the processor control, a network of 
+one-bit or multi-bit signals linking separate control logic to the data path. 
+The control signals often intersect with the data path at a multiplexer, where 
+the control signal dictates, for example, whether an input to the ALU comes 
+from the register file or an instruction immediate operand. The input to the 
+control logic comes in the form of the instruction op code, which is ultimately 
+responsible for controlling the route an instruction takes along the data path.
+
+Let's look at the routes of some example instructions. When an add instruction 
+(R-format) is read by the instruction memory at the program counter address, 
+the op code bits go to the control logic and the remaining bits immediately 
+flow along multiple other routes. Some bits are duplicated to multiple 
+locations, for example, 5 of the last 16 bits are sent to the register file to 
+specify the destination register, but all of the last 16 bits are also prepared 
+as an immediate operand as input to the ALU. For an R-format instruciton, the 
+"immediate operand" is a meaningless mushing together of the destination 
+register number, the shift amount, and the function code, but the data path 
+doesn't know better and sends these bits to both locations. At the input to the 
+ALU lies a multiplexer which, thanks to a control signal informed by the 
+instruction op code, DOES know that this is an R-format instruction and the ALU 
+input should come not from the last 16 bits of the instruction but from a 
+source register. While the 16 instruction bits were being fed to one side of 
+this multiplexer, the register file used other bits from the instruction to 
+read the appropriate source register and now presents this operand to the other 
+input of the multiplexer. The control signal selects the operand provided by 
+the register, ignoring the other option, and the ALU recieves the correct 
+input. If the instruction had been an I-format addi, the control signal would 
+have selected the immediate operand instead. Load-word and store-word 
+instructions are where the data memory abstraction comes into play. In a load 
+word instruction, the ALU adds the address offset (immediate value) to the base 
+address (from a source register). This address is consumed by the data memory 
+which reads a 32-bit word from the provided memory address. This word follows 
+the data path back to the register file, where it is stored in the destination 
+register.
+
+This system is organized, but not very efficient. The clock cycles once per 
+instruction, and at any point in this clock cycle only one of the components of 
+the processor is busy, the rest idling. Also, the slowest instruction limits 
+the clock rate, which cannot easily be adjusted on a per-instruction basis. 
+Pipelining addresses both of these issues and is best illistustrated by the 
+laundry example. A non-piplelined approach to laundry is this: wash a load of 
+clothes, dry the load, and finally fold and put the clothes away. After 
+finishing the first load, start washing the second, and repeat this cycle for 
+every load. The pipelined approach is much more efficient. The first load out 
+of the washer is moved to the dryer and the washer is started with the second 
+load. After the washer and dryer are done, the second load is moved from the 
+washer to the dryer, and the third load is started washing, and the first load 
+is folded and put away. At this point, the laundry pipeline is full - all 
+functional units are busy. If we had, say 50 loads of laundry to do, the 
+throughput in loads of laundry per hour is roughly 3x more in the pipelined 
+system versus in the unpipelined, or single-cycle system. Extending this to 
+computer processors, one load of laundry can be equated to an instruction, 
+while the wash, dry, and fold steps map to the phases of the 
+fetch-decode-execute cycle. To impliment pipelining in a processor, the clock 
+rate is turned up to fire for every one of these stages. The execute step is 
+split into three sub-steps whose completion times closely match those of the 
+fetch and decode steps. After the fetch step is completed for the first 
+instruction, the clock fires and the first instruction is moved on to the 
+decode step while the next instruction is fetched. In this way, the pipeline is 
+loaded after 5 instructions. Nearly all of the components of the processor are 
+busy at any given time, and the impact of slow instructions on the overall 
+throughput is partially mitigatated. Throughput increases but response time 
+does not improve, since the time from the beginning of an instruction fetch to 
+the end of its execution does not decrease. Average response time can be viewed 
+as the reciprocal of throughput, and this performance metric scores higher in a 
+pipelined system than in a single-cycle processor.
+
+Stepping back, we can extract two core ideas from this dive into processor 
+design. The first is the usage of abstractions to simplify design. Reasoning 
+about the data path is much easier when the details of how the register file 
+actually knows which registers to read and write from and how the ALU 
+interprets control signals to determine whether addition or subtraction should 
+be performed, can be hidden. The second design principle is the usage of 
+pipelining to improve performance. Throughput is increase drastically by 
+processing multiple instructions at the same time. Pipelining can only work 
+effictively on systems that are regular, calling back to another design 
+principle: "Simplicity through regularity." All of these concepts intertwine 
+elegantly in processor design and in engineering in general. Now that we have a 
+processor model that executes instructions as quickly as possible, the natural 
+next step is to predict what instructions should be executed. Branch prediction 
+is an essential component of modern processors, and it will be exciting to see 
+how it fits into the pipelined processor implimentation.

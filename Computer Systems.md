@@ -1821,12 +1821,19 @@ In this chapter, we study two implementations in MIPS:
         - The control unit is a full state machine that turns the instruction op code into an output signal
   - ![image-20210226133640496](/home/collin/.config/Typora/typora-user-images/image-20210226133640496.png)
   - Control instructions
+  - **The boxes and lines in black are the *data path***
+    - This is where the execution was happening
+    - Each of these lines is 32 lines of binary signal
+  - **The stuff in blue is the *contro*l**
+    - It is like pushing buttons to store in registers on breadboard
+    - Each of these lines is just one bit
 
 ### Data path
 
 - All the areas that an instruction and the data (read from memory based on address stored in instruction) flows through before it is finished
 - You cannot talk about the data path without discussing control
 - Registers, ALU, mux's, memories
+- Every line you see is actually 32 lines in parallel
 - Build the data path (FDE)
   - What are the abstractions in a data path?
     - Instruction memory
@@ -1841,8 +1848,124 @@ In this chapter, we study two implementations in MIPS:
   - Gets updated by the Adding unit that can only add four
   - Put the PC+4 back in the PC
   - ![image-20210226134227688](/home/collin/.config/Typora/typora-user-images/image-20210226134227688.png)
-
 - This part of the processor is responsible for **fetch**
+- **Instruction register**
+  - ![image-20210301131615250](/home/collin/.config/Typora/typora-user-images/image-20210301131615250.png)
+- It takes in 32 bits of address to memory and puts out 32 bits of content
+- The common case is to add 4, so it does that and sticks it back in PC. 
+
+#### Multiplexers
+
+- When you have two sets of 32-bits coming in and only one going out, you need a multiplexer, because just joining the wires would result in a logical OR
+
+#### Path ways
+
+- You need at least three pathways in the data path to have one path for each instruction format
+
+#### Decode
+
+- Takes in an instruction
+- The op code tells us what format the instruction is in
+- R/I/J format instructions may follow the same path for a while, but will have to find separate paths eventually
+- Let's pretend we have an `add` instruction
+  - Pull the operands out of the register file based on `rs` and `rt`
+  - Feed them to an add circuit in the ALU
+  - Store the result to `rd`
+- Register file
+  - ![image-20210301132740694](/home/collin/.config/Typora/typora-user-images/image-20210301132740694.png)
+  - We have our 32 32-bit registers
+  - have a lot of logic to read these registers
+  - Simplify the job - a black box around the register file
+  - What is the most you need? An R-format instruction reads two registers
+    - Read data 1 and Read data 2
+    - For jump, you don't need any registers
+  - RegWrite
+    - A control line that controls when you write
+    - You have to supply a 32-bit value
+    - Comes from the loop-back
+- ALU
+  - ![image-20210301133232440](/home/collin/.config/Typora/typora-user-images/image-20210301133232440.png)
+  - The 6 function bits tell the ALU what to do
+  - The 6 bit op code tells that this is an R-format instruction (that will use the ALU)
+- Data-memory abstraction
+  - Give it an address (result from the ALU)
+  - MUX
+    - memtoReg as selector bit
+  - Loop-back to RegWrite
+    - Also pulls from original instruciont6 to get destination register
+    - ![image-20210301133621434](/home/collin/.config/Typora/typora-user-images/image-20210301133621434.png)
+  - The data memory unit is between the register file and memory
+  - The **data memory** *accesses memory* for the processor to get **operands**
+    - The **instruction memory** *accesses memory* to pull out i**nstructions**
+- I-Format Decoding
+  - Read reg operands
+  - Calc address using 16-bit offset
+    - Use ALU but sign-extend offset
+      - This is used to calculate a memory address by adding the offset (immediate value) to the base address (`rt`)
+      - **Branch instruction**
+  - Do sign extension
+- The ALU has a four bit selector
+  - Because it must select between many different operations
+
+### There are Three Paths in the Processor Interstate System
+
+- One for each instruction format
+- R-format
+  - The RegWrite control signal tells which register to write back to
+- I-format
+  - Two kinds:
+    - **lw/sw**
+      - ![image-20210303131807901](/home/collin/.config/Typora/typora-user-images/image-20210303131807901.png)
+    - **bne/beq**
+      - Need sign extension as for lw/sw
+      - It is looking for a word address, not a byte address, so multiply by four
+      - ![image-20210303132012359](/home/collin/.config/Typora/typora-user-images/image-20210303132012359.png)
+      - ALU Zero signal
+        - bne/beq - if the two data registers are equal or not, branch to branch calculated by
+
+### The Main Control
+
+- Signals
+  - <img src="/home/collin/.config/Typora/typora-user-images/image-20210303133618752.png" alt="image-20210303133618752" style="zoom:150%;" />
+  - Spend some time with this and the main zoomed out picture
+  - **There is a truth table that says, if this instruction comes in, here are the signals we assert**
+  - <img src="/home/collin/.config/Typora/typora-user-images/image-20210303134008703.png" alt="image-20210303134008703" style="zoom:150%;" />
+  - **The setting of the control lines is completely determined by the opcodes fields of instruction**
+
+### Jump
+
+- Jump uses the four most significant bits from PC to fill out the last four bits
+
+## Pipelining
+
+- In our current understanding of the processor as a sequential flow chart, we have a few performance problems
+  - The slowest instruction (load word) throttles the clock cycle
+  - Most instructions use only a small part of the data path
+- We have looked at an ideal, single-cycle processor implementation
+- In pipelined implimentations,
+  - Multiple instructions are overlapped in execution
+  - The fde cycle changes to five steps
+- Henry Ford pipelined in factories
+
+### **The laundry example**
+
+- In pipelining, the response time does not change!!!!!
+- Throughput increases
+- It reduces **average response time**
+  - t1: beginning of first instruction
+  - t2 :end of last instruction
+  - average response time = (t1 - t2) / # of instructions completed
+- The pipeline is loaded when all the units are working
+- Exploiting concurrency
+
+### Staging
+
+- They tried a 3-stage pipeline initially
+- Then, they tried to balance the loads better with a five stage pipeline
+  - ![image-20210305133455487](/home/collin/.config/Typora/typora-user-images/image-20210305133455487.png)
+  - ![image-20210305133648781](/home/collin/.config/Typora/typora-user-images/image-20210305133648781.png)
+
+
 
 
 
