@@ -15,20 +15,19 @@ Translating to Assembly
   Answer:
 
   ```assembly
-  # Register mapping
-  #	f -> $s0
-  # g -> $s1
-  #	h -> $s2
-  #	i -> $s3
-  #	j -> $s4
-  
-  add $t0, $s1, $s3
-  add $t1, $s2, $s4
-  sub $t2, $s1, $s3
-  sub $t3, $s2, $s4
-  mul $t0, $t0, $t1
-  mul $t1, $t2, $t3
-  div $s0, $t0, $t1
+# li $s1, g #pseudo code to designate register mapping
+# li $s2, h
+# li $s3, i
+# li $s4, j
+add $t0, $s1, $s3 
+add $t1, $s2, $s4
+sub $t2, $s1, $s3
+sub $t3, $s2, $s4
+mult $t4, $t0, $t1
+mult $t5, $t2, $t3
+div $t4, $t5
+mfhi $s6
+mflo $s7
   ```
 
   
@@ -40,21 +39,19 @@ Translating to Assembly
   Answer: 
 
 ```assembly
-# Register mapping
-# i -> $s0
-# j -> $s1
-# f -> $s2
-# g -> $s3
-# h -> $s4
-
-slt $t0, $s1, $s0
-beq $t0, $zero, L1
-sub $s2, $s3, $s4
-j EXIT
-L1: 
-add $s2, $s3, $s4
-EXIT:
-...
+# li $s0, f #pseudo code to designate register mapping
+# li $s1, g 
+# li $s2, h
+# li $s3, i
+# li $s4, j
+main:
+	slt $t0, $s4, $s3      # j < i
+	beq $t0, $zero, hello  # branch if !(j < i) -> i <= j
+	sub $s0, $s1, $s2
+	j exit
+hello:
+	add $s0, $s1, $s2
+exit:
 ```
 
 3. ```cpp
@@ -69,19 +66,19 @@ EXIT:
 # i    -> $s1
 # k    -> $s2
 
-L1:
-subi $t0, $s1, 1
-sll $t0, $t0, 2
-lw $t1, $t0($s0)
-bne $t1, $s2, LN
-addi $t0, $s1, 1
-sll $t0, $t0, 2
-lw $t1, $t0($s0)
-beq $t1, $s2, LN
-addi $s1, $s1, 1
-j L1
-LN:
-...
+loop:
+    subi $t0, $s1, 1
+    sll $t0, $t0, 2
+    add $t0, $t0, $s0
+    lw $t1, 0($t0)
+    bne $t1, $s2, next
+    addi $t0, $s1, 1
+    sll $t0, $t0, 2
+    lw $t1, 0($s0)
+    beq $t1, $s2, next
+    addi $s1, $s1, 1
+    j loop
+next:
   ```
 
 
@@ -90,7 +87,7 @@ LN:
 
 ```cpp
 int fact (int n) {
-    if (n < 1) return n; // Assuming typo in original problem when it said return f
+    if (n < 1) return n;
     else return n * fact(n - 1);
 }
 ```
@@ -99,24 +96,32 @@ Answer:
 
   
 
-1. Return f if condition
-2. Return n*recursive call with n-1 otherwise
-   1. Store n at stack pointer
+1. Use n from $a0
+2. If n < 1
+   1. lw $a0, 0($sp)
+   2. j $ra
+3. else
+   1. mult $a0, 
+   2. sw $v0, -($sp)
+   3. jal Funct
 
 ```assembly
 # Register mapping
 # n -> $a0
 # returned value -> $v0
 
-LF:
-slti $t1, $a0, 1
-beq $t1, $zero, LN
-add $v0, $t0, $zero
-j $ra
-LN:
-
-subi $t2
-j $ra
+fact:
+	slti $t0, $a0, 1
+	beq $t0, $zero, else
+	
+if:
+	sw $v0, 0($sp)
+	j $ra	
+else:
+	jal fact
+	lw $t0, 0($sp)
+	mult $a0, $t0
+	mflo $v0
 ```
 
 
@@ -126,3 +131,40 @@ j $ra
     M(0) = 0;
     F(n) = n – M(F(n-1)) when n > 0
     M(n) = n – F(M(n-1)) when n > 0
+
+Answer:
+
+```assembly
+# Reg map
+# F -> $s0
+# M -> $s1
+# n_max -> $s2
+
+li $t0, 1
+sw $t0, 0($s0)
+sw $zero, 0($s1)
+beq $s2, $zero, exit
+li $t1, 1 # counter n from 1 to n_max
+loop:
+	addi $t2, $t1, -1   # n-1
+	add $t3, $s0, $t2  
+	lw $s3, 0($t3)		# F(n-1)
+	add $t5, $s1, $s3
+	lw $s4, 0($t5)		# M(F(n-1))
+	add $t4, $s0, $t1
+	sub $s5, $t1, $s4
+	sw  $s5, 0($t4)
+	
+	add $t3, $s1, $t2  
+	lw $s3, 0($t3)		# M(n-1)
+	lw $s4, 0($s3)		# F(M(n-1))
+	add $t4, $s0, $t1
+	sub $s5, $t1, $s4
+	sw  $s5, 0($t4)
+	beq $t1, $s2, exit
+	j loop
+exit:
+	
+
+```
+

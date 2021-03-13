@@ -20,7 +20,7 @@ that the result is multiplied by, and can be negative or positive. This signed
 value is represented in bias format to eliminate the need for a sign bit. The
 bias is subtracted from this field to find the actual exponent, so any values
 less than the bias will end up as negative. The third element of floating point
-representations is the mantissa and holds the significant digits after the r
+representations is the mantissa and holds the significant digits after the 
 radix point in normalized form (one digit before the decimal point, the shift
 amount is held in the exponent field). Since the single digit before the radix
 point in a normalized binary value will always be one, this is excluded from

@@ -1957,6 +1957,13 @@ In this chapter, we study two implementations in MIPS:
   - average response time = (t1 - t2) / # of instructions completed
 - The pipeline is loaded when all the units are working
 - Exploiting concurrency
+  - Every clock cycle, an instruction finishes in pipelined and non-pipelined implimentations
+  - You speed up the clock by almost 5x with pipelining
+- Time between instructions = time(nonpipe)/number of stages
+- **Hardware designers are way ahead of where software designers are**
+  - **Software guys for 30-40 years have not been able to keep up with the advances in hardware**
+  - Can we write sequential code and the compiler turns it into a parallel program?
+  - We can do this with GPU's, but not with arbitrary algorithms
 
 ### Staging
 
@@ -1965,7 +1972,103 @@ In this chapter, we study two implementations in MIPS:
   - ![image-20210305133455487](/home/collin/.config/Typora/typora-user-images/image-20210305133455487.png)
   - ![image-20210305133648781](/home/collin/.config/Typora/typora-user-images/image-20210305133648781.png)
 
+### Hazards with Pipelining
+
+- We will need to change the data path to address these problems
+- All instructions are 32-bits
+  - Easy to fetch-decode-execute
+    - decode and read registers in one step
+    - Alignment of memory operands
+      - mem is only one step
+  - Intel processors are 1-17 byte instructions
+- Hazards
+  - I went and fetched something, but have complications
+  - Three kinds
+    - Structure hazard
+      - Bad design
+      - A required resource is busy
+      - 2 instructions need to use ALU or sign extension unit at the same time
+    - Data hazards
+      - Need to wait for previous instruction to complete its read/write
+      - I need some operand, but the instruction ahead of me is providing it. Only writes back to register at the last step
+      - <img src="/home/collin/.config/Typora/typora-user-images/image-20210310132248819.png" alt="image-20210310132248819" style="zoom:67%;" />
+    - Control hazards
+      - Deciding on control action depends on previous instruction
+      - The branch instruction cannot tell the rest of the processor which way to go until it completes the ALU
+  - At the end of the day, processor designers want good performance
+    - They are not willing to compromise the accuracy of the outcomes for speed, though
+    - **They have to stall the pipeline when one of these hazards happens**
+      - Insert no-op instructions in the stream
+      - ![image-20210310132406587](/home/collin/.config/Typora/typora-user-images/image-20210310132406587.png)
+      - Sub depends on add
+      - **The bubbles are inserted by the compiler**
+        - It tries to avoid no-ops, but inserts them when absolutely no other option
+        - **Forwarding**/**Bypassing**
+          - ![image-20210310132701762](/home/collin/.config/Typora/typora-user-images/image-20210310132701762.png)
+          - Cannot forward backwards in time - **Load-Use Hazard**
+            - ![image-20210310133001652](/home/collin/.config/Typora/typora-user-images/image-20210310133001652.png)
+
+### Code scheduling
+
+- Group all load word instructions at the beginning
+- *Without compromising programmer intent*
+
+### Control Hazards
+
+- Branch determines flow of control - which instruction should I load next?
+- Flush pipeline - let the pipeline go, because we selected the wrong instruction
+- Add hardware to do this in the ID stage
+  - Tell result of compare in decode stage itself instead of waiting one more stage to end of EX step - saves one no-op instruction
+- When we have a long pipeline (34 stages)
+  - Stall penalty becomes unnacceptable (flush time)
+- Branch prediction
+  - Only stall if prediction is wrong
+    - Looping - always take the loop - only wrong once
+
+### Ways To Deal with Pipelining Hazards
+
+- Introduce bubbles - **no op instructions**
+- **Forwarding** - The ALU passes the result to itself to finish the job
+  - A dependency between two R-format instructions
+- Load-use hazard - **Code scheduling**
+  - We have a lw
+  - Use it as an operand in the next op
+  - Forwarding does not help
+  - At least one no-op instruction
+- Branch prediction for control hazards
+  - When the prediction is wrong, we have to flush the register
+  - The same amount of loss as if we had inserted no-ops
+
+### Branch Prediction
+
+- Static branch prediction
+  - Based on typical branch behavior
+  - For example in a loop, predict backwards branch taken, not forward branch taken
+  - If you have a `if: return` statement, assume it will not be taken
+- Dynamic branch prediction
+  - Requires hardware to measure branch decision statistics
+  - Finite state machine
+    - It is a hardware model
+    - Out front with the instruction fetch
+    - Attaches a prediction tag to each branch instruction
+
+### RISC vs CISC with Pipelining
+
+- With Intel architectures, it is very hard to do branch prediction
+- With RISC, it is much easier to manage, so pipelining can be performed easier
+- This was a big factor in the RISC/CISC 
 
 
 
+![image-20210312132642729](/home/collin/.config/Typora/typora-user-images/image-20210312132642729.png)
 
+
+
+### Interstage Buffers (Registers)
+
+- We need these buffers to store, for example, the write back register number from an R-format instruction 5 stages ago so that we know where to put that value 4 stages later
+  - We only need these registers to be 5 deep
+
+- ![image-20210312133128007](/home/collin/.config/Typora/typora-user-images/image-20210312133128007.png)
+
+![image-20210312133150337](/home/collin/.config/Typora/typora-user-images/image-20210312133150337.png)

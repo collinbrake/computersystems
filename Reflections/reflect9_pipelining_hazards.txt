@@ -1,0 +1,71 @@
+Pipelining, as discussed in the last reflection, allows us to turn up the clock 
+rate in a processor by many times, increasing throughput. This does not all 
+happen for free, however, and issues arise when processors are pipelined. These 
+issues threaten the accuracy of results produced by the processor. Because of 
+this, these issues are called pipelining hazards. Given the trade-off between 
+speed and accuracy, processor designers always chose accuracy - it is 
+unnacceptable to compromise programmer intent for the sake of faster processing 
+when confronted with a pipelining hazard. As a result, the performance gains in 
+pipelined systems are not not linear to the number of stages in the pipeline. 
+At times the processor must wait until an instruction finishes before it 
+executes the next instruction, effectively resulting in a mostly empty pipeline 
+in the intermission. There are many tricks, however, that processor designers 
+impliment to gain back some of that performance, and keep the pipeline loaded 
+as much as possible. We will look at two kinds of pipelining hazards and the 
+techniques used to mitigate these hazards while retaining as much performance 
+as possible. As we will see, a knowledge of pipelining hazards is crucial for 
+computer scientists and engineers in order for them to understand compiler 
+opimizations and the tradeoffs between differing processor architectures.
+
+The first kind of pipelining hazard is a data hazard. This is where an 
+instruction is fetched, and one of its operands is dependant on the execution 
+of a preceeding instruciton that is still in the pipeline. This operand hasn't 
+been written back to its register, so when the new instruction reads that 
+register it will get garbage. This is prevented by inserting no-op instructions 
+between the new instruction and the preceeding instruciton it is dependent on. 
+When the processor has 17 stages though, this means that the throughput is 
+reduced by 17x while the first instruction finishes. In one data hazard 
+scenario, some of this performance can be regained by forwarding. In the case 
+where no memory is involved, i.e. an add instruction followed by a sub, the 
+output of the ALU can be forwarded directly back to one of its inputs for the 
+next instruction, using a special hardware path. The other kind of data hazard 
+is a load-use hazard, where an operand for the fetched instruction comes from a 
+lw instruction preceeding it that has not finished. Since this involves a 
+memory operation (which occurs in the last stage of execution) forwarding 
+offers very marginal gains. Instead, compilers try to schedule code so that lw 
+instructions are spaced out from the instructions that use the operands they 
+loaded. This is often accomplished by grouping all load words near the 
+beginning of a group of instruction near the beginning of a group of 
+instructions.
+
+The second kind of pipelining hazard is a control hazard. This is where a 
+branch instruction is fetched, and while it is in the pipeline the PC unit does 
+not know what offset it should add to the program counter, since that is 
+dependent on the outcome of the branch. Special hardware is used to make a 
+prediction about which branch should be taken. If the prediction is wrong, the 
+pipeline must be flushed and a different code path taken. This is expensive, so 
+much effort is expended to improve the accuracy of branch prediction hardware. 
+There are two kinds of branch prediction: static and dynamic. In static 
+prediction, the hardware is hardcoded to follow certain rules: for example, 
+always prefer to branch backwards instead of forwards. In a loop, this is a 
+smart move since the loop control only branches forward once (at the end of the 
+loop) and may branch backwards thousands of times in the loop execution. 
+Dynamic branch prediction uses a finite state machine in hardware to build a 
+model of past branching events and their outcomes. This model is updated during 
+program execution, and produces better results than static branch prediction.
+
+It is important for programmers to understand pipelining hazards and the varous 
+ways of coping with them. One application of this knowledge is in compiler 
+optimizations, which can be turned on to impliment the tricks discussed above 
+and generate faster assembly code. Pipelining also highlights the advantage of 
+RISC architectures. Small instruction sets make pipelining hazards much easier 
+to manage, reducing the amount of custom hardware that must be added to 
+impliment forwarding. Simple instruction sets also make branch prediction 
+easier. This results in a more efficeint processor since the performance losses 
+when a control hazard arises are easier to mitigate. This is one reason that 
+almost all embedded processrs use a RISC architectures such as ARM instead of a 
+CISC architecture like that in Intel processors. The efficiency of RISC 
+architectures has made them the choice in mobile devices as well, where power 
+efficiency is the most important metric, and this is one of the fastest-growing 
+fields of computing. Understanding processor pipelining and the methods used to 
+successfully impliment it is important for those in the computing field.
