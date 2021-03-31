@@ -2072,3 +2072,446 @@ In this chapter, we study two implementations in MIPS:
 - ![image-20210312133128007](/home/collin/.config/Typora/typora-user-images/image-20210312133128007.png)
 
 ![image-20210312133150337](/home/collin/.config/Typora/typora-user-images/image-20210312133150337.png)
+
+
+
+- Interstage buffers are used for forwarding
+  - Between R-format instructions, we can generally just forward and avoid NOPs
+
+### Multiple Stage Execution
+
+![image-20210317130640404](/home/collin/.config/Typora/typora-user-images/image-20210317130640404.png)
+
+- The right side of the register file is shaded in the instruction decode stage and the left side is shaded in the writeback stage
+- ![image-20210317131222979](/home/collin/.config/Typora/typora-user-images/image-20210317131222979.png)
+  - Control signals are stored in the interstage buffers as well as the data
+
+## Project
+
+- AND Conditions
+  - Midterm grade >= 90%
+  - Quiz >= 88%
+  - Reflections >= 85%
+
+## Hazards
+
+- Pass register numbers backwards
+- Forwarding
+  - The stage writes to a previous stage so the next instruction can access it
+  - We have a set of rules to determine when to forward: EX/MEM.RegisterRd == ID/EXE.RegisterRs
+- ![image-20210317133552082](/home/collin/Documents/College/2021-S1 Computer Systems/image-20210317133552082.png)
+
+## Control Hazards and Branching
+
+- Early solution to handle control hazards and avoid branch delay
+  - Hardware to move branch instruction upstairs - page 318-320
+- Special cases
+  - ![image-20210319130401382](/home/collin/.config/Typora/typora-user-images/image-20210319130401382.png)
+  - If the last add was only one or two ahead of beq, use forwarding to deal iwth
+  - This is just a typical data hazard, not a control hazard
+- On deeper and super-scalar pipelines, branch penalty becomes more significant (what happens when branch prediction fails)
+- Enter, Dynamic Prediction
+  - Prediction buffer is a branch history table
+  - indexed by recent branch instruction address
+  - stores outcomes
+  - To execute a branch
+    - check the table, expect same outcome
+    - start fetching
+    - update table if wrong, and only if wrong
+      - state change/transition
+      - We have four spots, two for not taken last time and two for taken last time
+        - for each, we have a inner-most and outer most
+        - takes two fails to get from an inner most to the different category
+  - tags on certian instructions that are being executed over and over
+    - single isolated branches typically don't matter
+    - repeated instructions have context and matter more
+  - The table is indexed by instruction address because we only predict for repeated branches
+- Even with a predictor, we have a one-cycle penalty for taken branch
+- Branch target buffer
+  - cache
+  - indexed by PC when instruction fetched
+  - In this context, if I just computed target address, next time in the same context I don't have to recompute
+- Assume all branches have zero penalty for correctly taken and 2 cycle for incorrect
+  - Assume that dynamic predictor is correct only 90% of the time
+    - branch instruction is only taken 5% of the time
+      - static will be correct 95% of the time, dynamic only 10%
+    - 95% of the time 
+      - static will be correct 95% of the time, dynamic only 10%
+    - 70% taken
+      - this might be an application for a dynamic predictor
+
+## Exception Handling
+
+- A hacker inserted an unknown op code
+- overflow
+- interrupt from IO subsystem
+- Anything that requires the processor to go outside of normal flow
+  - We have to maintain performance
+- Exceptions are pretty common
+  - Every single operating system function is triggered by an exception
+- MIPS System Control Coprocessor
+  - Special register
+  - Exception Program Counter register (EPC)
+  - Hardware detects exceptions
+    - It doesn't know what the programmer wants it to do on an exception
+    - It just saves the offending address to EPC
+    - Saves offending cause to cause register:
+      - 1-bit, say
+      - 0 for undefined op code
+      - 1 for overflow
+  - Jump to handler at 8000 00180
+    - If the program wants to continue on and ignore, just branch back from handler address to old PC
+      - `j $ra`
+    - Otherwise, could jump to another address to fire, for example, the blue screen of death
+  - Some of the exceptions we write in a higher level language are hardware exceptions
+    - Like divide by zero
+  - All user exceptions are handled by the runtime of the language
+  - Vectorized interrupts
+    - Depending where it showed up, you konw what went wrong
+    - You have the option to jump fro mthis 20 bit location to a real handler or to return address
+  - Restartable instruction
+- Exceptions are a kind of control hazard
+  - same cost as mis-predicted` branch
+
+## Interrupts
+
+- Handling mechanisms are similar, but control flow is a little different
+  - Jump to a handler
+  - No exception program counter usage for interrupt
+
+## Exceptions and Pipelining
+
+- Pipelining overlaps multiple instructions
+- Simple approach: deal with exception from earliest instruction
+  - flush subsequent instructions
+  - **precise exceptions** - like inserting nops or flushing for control hazards
+- In **complex pipelines**
+  - greater performance but more complexity
+  - Multiple instructions issued per cycle
+  - out-of-order completion
+  - maintaining precise exceptions is difficult
+- Similar to HAZARDS
+
+## Instruction-level Parallelism
+
+- Pipelining was the simplest way to do this
+- To increase ILP
+  - make deeper pipeline
+    - less work per stage => shorter clock cycles
+  - **Multiple issue pipeline**
+    - It's like a car manufacturer starting another assembly line instead of trying to shorten the time at each stage in the existing one
+      - Already highly optimized
+    - replicate pipeline stages => multiple pipelines
+    - Promise
+      - CPI < 1, so use instructions per cycle
+        - How many instruction finish in a clock cycle
+      - EG 4GHZ 4-way muliple issue pipeline (4 pipelines)
+        - 
+      - Dependecies reduce this in practice
+      - after 2012 they realized that we can't just increase
+  - static multiple issue - compiler
+    - compiler groups instructions to be issued together
+    - packages them into "issue slots"
+    - compiler detects and avoids hazards
+  - dynamic multiple issue
+    - CPU examines instruction stream and chooses instructions to issue to each cycle
+      - like predicting which interstage toll line will be the fastest to go into
+    - compiler can help by code scheduling (reordering instructions)
+    - CPU resolves hazards using advanced techniques at runtime, forwarding, predicting, etc.
+
+- Speculative execution
+  - Start instruction as soon as possible
+  - check whether guess was right
+    - if so, complete
+    - If not, do not write back or commit, just roll back and do the right thing
+    - You have to be able to do three things: flush, rollback, restart
+  - Common to static and dynamic multiple issue
+    - Generally this is a result of compiler and hardware working together
+  - Hardware
+    - Fetch unit can "look ahead"
+      - Buffer results until it determines they are actually needed
+      - Flush buffers on incorrect speculation
+      - Instructions are executed for performance - out of order execution
+  - What happens if exceptions occur on speculative execution?
+- Very Long Instruction Word
+  - Specifies multiple concurrent operations
+  - We saw a precursor in multimedia operations
+    - Most of these ops are 8 or 16 bit, we can do several in one 32 bit word
+  - The whole point is to overlap the execution of multiple instructions
+    - avoid dependencies
+    - balance the stages
+- ![image-20210322133626790](/home/collin/.config/Typora/typora-user-images/image-20210322133626790.png)
+  - We might specialize one pipeline of a dual-issue pipeline for I-format (bottom in image above) and the top one for R-format (notice we don't have data mem access in top issue)
+- ![image-20210322133836298](/home/collin/.config/Typora/typora-user-images/image-20210322133836298.png)
+  - We can't resolve this data hazard with forwarding as in a single-issue pipeline
+  - We have to insert stalls
+    - We cannot take an arbitrary program and extract the greatest performance
+    - software hasn't caught up with hardware
+  - Loop unrolling
+    - Repeat the code
+    - Now we don't have branch prediction
+    - Better performance but at cost of registers and code size
+
+## Static Versus Dynamic Instruction-Level Parallelism
+
+- Static
+  - compiler does a lot of scheduling and loop unrolling
+  - how many instructions to a issue package
+- Dynamic
+
+## Reservation Stations
+
+<img src="/home/collin/.config/Typora/typora-user-images/image-20210324125921946.png" alt="image-20210324125921946" style="zoom:50%;" />
+
+- In order issue means in program order, the way the programmer intended, the way they will be fetched
+- Multi-issue processors will execute out of order instructions
+  - Commit unit fixes up the issues that arise from out-of-order execution
+- To the extent possible, the processor uses out-of-order execution
+  - **In-order execution requires lots of stalls**
+- Also speculative
+- Does the commit unit slow it down?
+  - The number of stalls avoided by OOO execution is high -> performance gains
+
+## Speculative Execution
+
+- Predict effective address
+- Don't commit until branch outcome is determined
+- avoid load and cache miss delays
+  - predict effective address
+  - predict loaded value
+  - load before completing outstanding stores
+  - bypass stored values to load units
+- Don't commit load until speculation is cleared
+- Why bother with dynamic scheduling?
+  - Not all stalls are predictable
+    - cache misses
+  - Can't always schedule around branches
+    - branch outcome is dynamically predicted - needed on processor
+  - Pointer aliasing
+
+## Porting what we have learned to other architectures
+
+- Intel Core i7 Pipeline
+  - Reservation stations
+  - Reorder buffer
+  - fetch
+  - decode
+- The fundamental performance question is, how many stalls did we use.
+
+## Fallacies
+
+- Pipelining is easy
+  - The laundry example is easy to understand
+  - The details are really hard
+- Pipelining is independent of technology
+  - Pipelining in a processor is not like assembly line design
+  - More transistors make more advanced techniques feasible
+
+## Pitfalls
+
+- Poor ISA design can make pipelining harder
+  - The fate of DEC
+    - VAX, IA-32
+    - They couldn't catch up
+  - complex addressing modes
+    - The MIPS only has 5
+    - It was designed for pipelining from the get-go
+
+## Conclusions
+
+- Pipelining does not affect latency
+- Datapath and control influence ISA
+- Pipelining increases throughput
+- Introduces hazards
+- Multiple issue and dynamic scheduling (ILP)
+  - Dependencies limit achievable parallellism
+  - Complexity leads to the power wall
+  - Dynamically packing issue slots
+- When discussing multiple issue pipelining, dynamic branch prediction is one tool we can use for speculative execution
+
+## Intel CEO Talk
+
+- Meteor lake - cloud cpu's
+  - x86 architecture
+  - XPU
+- Larger industry transmittion
+  - System on a chip to system on a package
+  - Foveros
+    - 3d packaging - stack tiles - AI processors, graphics, cpus vertically
+    - Power efficiency
+  - Ponte Veceo
+    - 40 tiles
+    - Single package
+    - 100 billion transistors
+    - Pettaflop AI computer
+    - Argon national laboratories
+    - High roi
+    - swap out tiles for performance or lower power or cost
+  - Manufacturing
+    - IDM 2.0
+    - foundery - 80% in asia now
+  - Radical change in compute architecture
+  - Andy Grove - critical inflection point
+    - Intelligent edge/AI
+- SiP Advantages
+  - Decreased wire length
+  - Decrease propogation delay
+    - This can be significant
+  - Error correction
+    - The longer the wire the more potential for noise
+    - Antenna effects
+  - Disadvantage - thermals
+    - DMM also need memory
+    - Carbon nano tube - no cooling issues
+
+# Chapter 5 - Exploiting the Memory Hierarchy
+
+We have only seen the inside of the processor, have not looked at memory much.
+
+Memory is not a single thing, like the few chips that form RAM.
+
+The computer system does not look at it that way - it sees the memory as a hierarchy
+
+- Registers
+- Cache
+- RAM
+- Hard disk
+
+Large and fast memory is expensive.
+
+**The magic of memory is that it gives you a large amount of fast memory for cheap!!!** All three of the desired parameters.
+
+Two parts of memory
+
+1. **Access time**
+   1. Latency to get an instruction or word (fetch)
+   2. Memory technology
+      1. CMOS is fast
+      2. DRAM is slow
+2. **Cycle time**
+   1. Memory organization
+   2. Just gave a request and got the word - now, can I tell you to get another one right away or do I need to wait for the system to settle down.
+      1. You can improve this by spreading subsequent memory requests across separate chips
+      2. Interleaved memory
+
+<img src="/home/collin/.config/Typora/typora-user-images/image-20210326125921202.png" alt="image-20210326125921202" style="zoom:80%;" />
+
+### Static RAM
+
+- Fast memory is more expensive
+- SRAM (CMOS usually)
+  - 0.5 ns is $5000
+  - 2.5 ns is $2000
+  - This was in 2012, has decreased a lot since then
+  - In one CMOS bit there are 6 transistors
+- DRAM
+  - 50 ns to 70 ns access time
+  - $75 to $20 per GB (2012)
+- <img src="/home/collin/.config/Typora/typora-user-images/image-20210326130908868.png" alt="image-20210326130908868" style="zoom: 67%;" />
+- Magnetic Disk
+  - 5 ms to 20 ms access time
+  - $2 to $0.2 per GB (2012)
+  - Disk scheduling
+  - Seek times - spinning disk and moving head
+- SSD
+  - 5 to 50 us $1 to $0.75 per GB (2012)
+- Ideal Memory
+  - access time like SRAM
+  - costs like Magnetic Disk
+  - terrabyte size like Magnetic Disk
+- Organizational tricks get the Memory Hierarchy as close as possible to ideal memory
+  - **This is one of the 8 great ideas**
+- ![image-20210326131925893](/home/collin/.config/Typora/typora-user-images/image-20210326131925893.png)
+  - Use a demultiplexer to use a multi-bit address to get the bit at a particular latch
+  - All data transfer happens on clock edges
+  - DDR means double data rate - stuff happening on rising and falling edges
+- **Principle of Locality**
+  - Temporal - time
+  - Spatial - space
+  - Example
+    - We have a one gigabyte program stored in memory
+    - temporal/spatial locality means:
+      - If a program at a given time accesses word 2 of this memory
+      - next couple accesses will likely be 3 and 4
+  - In time and space, these memory accesses will be clustered
+- **Memory Hierarchy**
+  - <img src="/home/collin/.config/Typora/typora-user-images/image-20210326133111073.png" alt="image-20210326133111073" style="zoom:80%;" />
+  - Principled way to organize memory
+  - Put fast memory close to the processor
+- Memory Blocks
+  - The slower the access time, the bigger the chunk you bring back
+  - Programs access data without knowing where it is physically located using memory address
+  - HIT
+    - accessed data is present in upper level
+    - hit ratio is number of hits/access
+  - MISS
+    - accessed data is absent in upper level and must be transfered from lower level
+  - Cache reduces average access time kind of like pipelining decreased average latency
+- The PC bus was designed to clock out 32 words
+
+### RAM Model
+
+- Both the Von Neumann and the Harvard architecture implement this model
+
+### Cache
+
+Cache is the star of the memory hierarchy story. It is the closest memory in the hierarchy to the processor. It is typically CMOS technology. It may be a few kilowords on the processor for Level 1 cache in the Intel scheme.
+
+- Cache controller
+  - Hardware logic that controls the blocks that come in and out of cache
+  - The processor generates an address
+  - The controller takes that and determines whether it is a hit or a miss
+    - Yep, it's in my temp store, can give it to you in one cycle time
+    - Nope, its going to have to go out to memory (RAM) and get another block
+- The programmer should not know where stuff is in memory
+  - The system's job is to make sure that what you need now is transfered close to the processor just before you need it
+- Right now, the model is that only a miss will trigger memory being moved around
+  - machine learning is being used to preemptively move memory around in modern processors
+- Questions
+  - How do we know if the data is present? Is this a hit or a miss?
+  - Where do we look?
+    - Linear search on every instruction (two or three memory accesses per instruction) would take way to long with a thousand words
+- Set Associative Cache
+  - We will start with a simpler model
+  - Direct-Mapped Cache
+  - Associative Cache
+  - A SAC is a combination of these
+
+#### Direct-Mapped Cache
+
+- Block size: **#Blocks**
+  - That many words are moved by the cache controller every time it moves
+
+  - Location determined by this address, in direct-mapping, only one choice:
+
+    - ```cpp
+      block address mod #Blocks
+      ```
+
+- ![image-20210329133049770](/home/collin/.config/Typora/typora-user-images/image-20210329133049770.png)
+  - There are only 8 seats in cache
+  - The seat number in cache is part of the memory address of the word
+    - If i know that I have 8 seats in cache, only look at the 3 right most bits of the memory address to find it in cache
+  - There may be many unfilled seats in cache
+  - In direct mapped cache, there will never be duplicate addresses based on last three numbers
+
+- How do I know which particular block is stored in a cache location
+
+  - have to store address as well
+  - valid bit - this memory is updated and current
+
+- Validity bit starts out as zero
+
+- The tag is the prefix of the seat number in the memory address
+  - This is how we tell which memory address is actually in the seat
+
+- ![image-20210329134119459](/home/collin/.config/Typora/typora-user-images/image-20210329134119459.png)
+  - This table is maintained by the cache controller
+- Collision
+  - There was valid memory there, but it needs to be overwritten
+  - The cache controller has to save the current data to RAM before bringng in the new value
+
+
+
+
+

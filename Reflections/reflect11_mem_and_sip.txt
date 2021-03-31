@@ -1,0 +1,84 @@
+In engineering, there are traditionally three opposing metrics that must all be 
+maximized to form the best product. They vary with the type of product, but can 
+be classified in three general areas: performance, size, and cost. It is easy 
+to create a product that is large and low cost, but by default it will be low 
+quality and unperformant. Creating a product that effectivly maximizes all 
+three of these areas requires extensive engineering and the designers must use 
+the resources available in the most efficient way possible. Good compromises 
+are required to balance the tension between these three goals. Computer systems 
+designers have been very successful in achieving all three aims at the same 
+time through principled organization of transistors and memory components. 
+Examination of the organization of computer systems leads to useful conclusions 
+about good engineering.
+
+The memory hierarchy is the organization of different types of memory around 
+the computer processor, and it is a great example of maximizing the three 
+metrics. Ideal memory would have the high access speed of SRAM, the low cost of 
+hard disk drives, and the large size available with hard disks. No single block 
+of silicon can fulfill these requirements, so computer engineers have 
+integrated different types of memory in a specific hierarchy that gets as close 
+as possible to the performance, speed, and economy of this theoretical ideal 
+memory. The principle behind the memory hierarchy is this: locate small blocks 
+of fast, expensive RAM close to the processor, and larger, slow memory 
+components such as hard disk drives and SSD's further away from the processor. 
+Ideally, the processor will rarely fetch data from the slow memory, but it will 
+have been previously cached in RAM. When the processor needs a memory word from 
+the hard disk, it is brought back with the entire block of memory around it. 
+The principle of locality indicates that memory is consumed by the processor in 
+clusters. If a given address is needed at time t, the next memory at the 
+address right after that will likely be needed at time t+1. The memory bus is 
+many bits wide so the cost to bring back a block of memory is not 
+proportionally higher than to bring back a single word. Hit ratio refers to the 
+number of times the processor finds the next memory address in cache divided by 
+the number of memory accesses. Miss penalty is proportional to the number of 
+times the processor must access memory that has not been cached.
+
+Access time is only one consideration when measuring memory speed. Cycle time 
+is access time in addition to the settling time required between subsequent 
+memory reads to allow the system to stabilize. Interleaved memory is a memory 
+layer that is composed of multiple identical components instead of one large 
+component. Consecutive memory words are placed in different components, the 
+goal being that no two consecutive memory acesses will be on the same chip. 
+This give settling time to each component after a memory call, but the 
+processor is not affected.
+
+The exploitation of the memory hierarchy crystalizes to one major idea: 
+distributed, modular systems where workload is shared between multiple units is 
+the way to gain efficiency when the maximum performance of individual 
+components has already been achieved. In interleaved memory, computer engineers 
+mitigated delays due to settling time by increasing the number of components at 
+work so that at any point one of them is always ready to be accessed. The 
+memory hierachy also takes advantage of the strengths of different kinds of 
+components, combining them in an organization that minimizes the weaknesses of 
+each. Another example of these concepts of parallel work distribution and 
+specialization is found in multiple issue pipelines. Processor design reached 
+the point where adding more stages to the pipline did not increase performance 
+and the clock rate could not be turned up any more. Adding more workers in the 
+form of more pipelines increases throughput. It also allows for efficiency 
+gains due to specialization, since pipelines can be specialized to handle 
+different instruction formats. Specializing systems and adding components 
+increases the complexity of designs, but it is the only way to make systems 
+that are performant, large scale, and economical at the same time.
+
+The most advanced computing systems built today make extensive use of large 
+numbers of specialized components to maximize efficiency. At Intel Unleashed 
+2021, CEO Pat Gelsinger introduced the Ponte Vecchio, a palm-sized block of 
+100 billion transistors that can spin up 1 petaflop per second and is targeted 
+at the high performance computing sector. The secret to its compact size is 
+specialization of components. The Ponte Vecchio is a System-in-Package (SiP) 
+made up of 40 tiles, CPU's, GPU's, and FPGA's, each designed to handle a 
+certain type of workload such as machine learning. Intel indicates that 
+customers will be able to specify which tiles are included in this package, 
+customizing the components to optimize for performance, low power consumption, 
+or some other metric. This reflects a trend in computing as the industry moves 
+from System-on-Chip (SoC) to SiP designs. SiP allows engineers to take 
+advantage of highly specialized systems without having to do the work of 
+integrating the individual components like CPU, GPU, RAM, and FPGA's on the 
+printed circuit board. SiP also allows for 3d design - components can be 
+stacked vertically to save space. SiP is the most exciting exemplification in 
+the computing industry of enabling complex systems made of specialized 
+components. These systems are more efficient than a single multi-purpose chip, 
+and SiP makes it possible to design systems that use many components. This 
+trend towards specialization has been present for a long time in the computing 
+industry, as seen inmultiple issue pipelines and exploitation of the memory 
+hierarchy, and SiP is just one more manifestation of it.

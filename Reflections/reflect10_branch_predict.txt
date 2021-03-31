@@ -1,0 +1,52 @@
+Pipelining is one of the most powerful concepts we have studied so far, as it 
+allows a multiplying effect on the throughput.It brings control and data 
+hazards with it, and also presents challenges regarding the storing of 
+information for each instruction being executed, as there are many instructions 
+in the pipeline at once instead of just one. The way that processor designers 
+have dealt with these challenges exemplifies the engineering process of making 
+good compromises by considering all the factors involved, in this case these 
+are primarily processor speed, financial cost, and maintenance costs of a 
+design, with more complex designs requiring more work to change and improve 
+down the road. As computer scientists and engineers, understanding these 
+compromises that processor designers have made to gain optimal performance at 
+the approprate price point and hardware complexity for a given application will 
+allow us to make informed decisions when chosing processors for a project. It 
+will also give us models to go back to when making these type of engineering 
+decisions in our career.
+
+The first issue above, that of sharing information between stages, is 
+complicated and requires the addition of special hardware to manage this 
+information interchange. Interstage buffers, registers between each processor 
+state, pass data along with an instruction as it proceeds through the pipeline. 
+An example of why tbey are required can be seen by examining the writeback 
+stage of an R-format instruction. This stage requires a register number that is 
+obtained from the instruction bits at the fetch and decode stages. By the time 
+these bits are consumed in the writeback stage, several other instructions have 
+passed through the fetch and decode stages and presented their bits to the 
+writeback input of the register file, overwriting the bits given by our 
+R-format instruction. To retain these bits, processor designers decided to 
+store them in registers between the stages, moving the bits along with an 
+instruction as it flows through so they are there when required. This adds 
+hardware complexity, but these interstage buffers are needed for many 
+operations in a pipelined data path. Another use is in storing the control 
+signals needed for the multiplexers and other contol logic at each stage of the 
+pipeline.
+
+The second issue mentioned above is that of control hazards. When processor 
+designers started pipelining systems, they knew that a branch presented a 
+hazard since the control does not know which offset to add to PC until a branch 
+is done. They added hardware at the decode stage that would arbitrarily tell 
+the control which way to go when a branch came in, but this is wrong 50% of the 
+time, and the pipeline then needs flushed, which imposes the same performance 
+cost as if NOPs had been inserted. Smarter branch prediction was needed, so 
+enter dynamic prediction. This uses branch look up tables that are indexed by 
+instruction address to predict if a branch should be taken or not. It is only 
+used for branches that are executed over and over for a block of code, and 
+builds a history of past behaviour for each branch and updates the finite state 
+machine at the instruction address at each execution. If the state machine 
+predictor is wrong twice in a row, it will change its prediction the next time. 
+This mechanism allows much greater preformance gains.
+
+With all these things, it is important to evaluate need for the additional 
+hardware complexity. The project budget and timeframe has to be taken into 
+account as in all engineering projects.
