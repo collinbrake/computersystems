@@ -2503,13 +2503,222 @@ Cache is the star of the memory hierarchy story. It is the closest memory in the
 - Validity bit starts out as zero
 
 - The tag is the prefix of the seat number in the memory address
-  - This is how we tell which memory address is actually in the seat
-
+  
+- This is how we tell which memory address is actually in the seat
+  
 - ![image-20210329134119459](/home/collin/.config/Typora/typora-user-images/image-20210329134119459.png)
+  
   - This table is maintained by the cache controller
+  
 - Collision
   - There was valid memory there, but it needs to be overwritten
   - The cache controller has to save the current data to RAM before bringng in the new value
+  
+- **Important ideas**
+
+  - Cache is more than the words stored
+  - Memory addresses must be mapped to cache block
+    - The processor just generates an address like usual
+  - Transfer of block from RAM takes multiple cycles
+    - the processor must stall for some cycles
+  - cache misses increase CPI
+
+- RAM/cache synchronization - a main issue in parallel programming
+
+- Cache size problems
+
+  - 16 KB cache **direct-mapped**, **write through**
+  - 4 words per block
+  - 32-bit address
+  - 16 KB => 4096 words => 1024
+  - <img src="/home/collin/.config/Typora/typora-user-images/image-20210402130504425.png" alt="image-20210402130504425" style="zoom:67%;" />
+  - 
+  - Each block needs 147 bits
+  - 128 data bits for 4 words
+  - Tag field needs 18 bits: 32 - 10(log2(1024)) - 2 - 2
+    - bit zero and bit 1 tells me which byte in word
+    - bits two and 3 tell me which word per block
+    - 10 bits to tell me which block I am at in cache
+    - 32 - 10 -2 -2 = 18 => tag
+      - which word in memroy is currently occupying the block in cache
+  - Add 1 to tag for valid bit => 19 bits
+  - 19 + 128 = 147
+  - Total cache size = 147 * 4096
+
+- Memory address mapping problem
+
+  - Get block of cache from memory address
+  - address 1200, 64 blocks, 16 bytes per block
+  - floor ( 1200 / 16 ) = 75 -> block in memory
+  - block number = 75 modulo 64 = 11
+
+- The Memory controller has a bus clock
+
+  - We get the address to the MC - 1 bus cycle
+  - 15 bus cycles per DRAM access by MC
+  - 1 bus cycle per data transfer from MC to processor
+  - The bus is typically 1 GHz
+  - Miss penalty
+    - 4 word block, 1 word wide DRAM
+    - miss penalty = 1 + 4x15 + 4x1 = 65 bus cycles per miss
+    - bandwidth  =16 bytes / 65 cycles - 0.25 B / cycle
+
+- Components of CPU time
+
+  - program execution cycles
+    - includes time for cache hits
+  - memory stall cycles
+    - mainly from cache misses
+
+- <img src="/home/collin/.config/Typora/typora-user-images/image-20210402132836937.png" alt="image-20210402132836937" style="zoom:67%;" />
+
+- given
+
+  - 100 cycle miss cycle
+  - I-cache miss rate = 2% -> better locality than D-cache
+  - D-cache miss rate = 4%
+  - Bace CPI ( ideal cache) = 2
+  - load and stores are 36% of instructions
+  - Miss cycles per instruction
+    - I-cache 0.02 (misses / instruction) x 100 (cycles / miss) = 2
+    - D-cache: 0.36 (loads / instruction) x 0.04 x 100 = 1.44
+  - Actual CPI = 2 + 2 + 1.44 = 5.44
+  - Ideal processor is 5.44/2 = 2.72 times faster
+
+- **Average Memory Access Time**
+
+  - AMAT
+  - miss penalty is 20 cycles
+  - hit time is 1 cycle (1 ns from spec)
+  - Instruction miss rate is 5%
+  - AMAT = 1 + 0.05 x 20 = 2 ns
+    - 2 cycles per instruction
+
+- When CPU performance increases, memory penalty becomes more significant
+
+  - Decreasing base CPI: greater proportion of time spent on memory stalls
+
+  - Increasing clock rate
+
+    - memory stalls account for more CPU cycles
+
+### System Bus
+
+The system memory bus is typically 3-4x times slower than the processor bus because there are many devices on the bus so if one is busy the other will keep the processor busy.
+
+### Cache Summary
+
+- Think about cache as a performance improving mechanism, not just a bucket to store stuff.
+
+- Cache is more than the words stored
+- Memory address must be mapped to a cache block
+- Transfer of Block from RAM takes multiple cycles
+- Cache misses increase CPI
+- Ideal cache is baseline CPI, with no misses, only due to processor performance internals
+- Main variables
+  - words per block
+  - bytes per word
+  - bus width (words)
+  - blocks in cache
+- Tuning cache is not trivial
+  - When you make your CPU faster, the miss penalty becomes more significant
+  - Decreasing the base CPI makes you spend a greater proportion of time on memory stalls
+  - increasing clock rate makes memory stalls account for more CPU cycles
+  - Can't neglect cache behavior when evaluating performance
+
+### Associative Cache
+
+- Direct-mapped cache was very good because we knew exactly what seat a given memory word would sit at.
+- The problem was that if three addresses come in and all want the same seat, cannot use other empty seats.
+- We are looking at fully associative cache
+  - Allow a given block to go in any cache entry
+  - Requires all entries to be searched at once
+  - Comparator per entry (expensive)
+- Associative search hardware
+  - At the same time check all the blocks
+  - You have to pay for extra hardware
+  - The main limitation to this is finances
+  - **Only one processor cycle per cache search**
+- Couldn't you make a look-up table that would take a address and return the seat number
+- The **replacement policy** is very important in associative cache - if the cache is full and we need a new block to come in, which block do we replace?
+
+### Set-associative cache
+
+- Problem: the complexity/cost of the search hardware **increases as a polynomial** as the number of blocks to search increases - its a high polynomial
+- Keep n down by increasing number of sets
+
+- n-way associative cache
+  - each set contains n entries
+  - block number determines which set
+    - block number % # sets in cache
+  - search all entries in a given set at once
+  - n comparators
+- This turns the growth factor to linear instead of exponential
+- Increasing n follows **the law of diminishing returns**
+- A 1-way set associative is direct mapped
+- As n increases, the complexity of search hardware increases exponentially
+- As n decreases, the efficiency of the cache decreases exponentially
+- Many processors have have a 4-way set associative cache
+
+### Evaluating Cache
+
+In a full cache, miss penalty is double, we have to store out the previous block and bring in a new one
+
+```pseudocode
+Miss penalty = 2 blocks * (words per block) / (words per bus) / (bus cycle frequency) * processor cycles/bus cycle => processor cycles
+```
+
+- Associative cache is better not only because it does not need to clear out blocks every time it loads a new word, but because the old words persist and may be reused
+
+### Replacement Policy
+
+If we have 8G of ram, and 16 K cache, the cache will get full. How will we replace
+
+- Replace invalid ones if present
+- Replace least recently used (LRU) otherwise
+  - Easily implimented in hardware for a 2-way cache, managalble for 4-way, impossible for higher
+- If you have 16 blocks, it will have to store 16^2 bits to keep a timestamp to determine LRU
+
+### Memory Hierarchy Review
+
+- The processor is asking for memory words by address.
+- The processor manages the register files - fastest memory in the hierarchy
+
+### LRU Algorithm
+
+- For an n-block algorithm, maintaines and nxn bit matrix in hardware
+- Algorithm: zero the ith row and fill ones in the ith column when block i is accessed
+- The row holding the least binary value will be the most recently accessed, and the row holding the largest value is the LRU
+- Intuition:
+  - For an n-block cache, we have n blocks and n positions that each could posibly hold in terms of time
+
+### Multi-level Cache
+
+- Problem:
+  - Evaluate just the L1 cache first
+    - Miss rate is 2%
+    - Miss penalty is 100 ns
+    - Base cpi is 1
+    - Processor clock rate is 4Ghz
+    - Redo the problem for two cases, increased CPI for miss from L1, increased CPI for miss from L2
+    - **Performance Ratio** = (CPI for L1 only) / (CPI for L2 and L1)
+- When designing L1 cache
+  - Focus on minimal hit time
+- When designing L2 or L3 (last cache before RAM, depending if this is a 2 or 3 level cache)
+  - Focus on a large enough cache so that we don't get a miss and have to go to memory
+  - If we are a little slow on the hit time, that is OK
+
+### Dependability
+
+- Mean failure rate
+
+
+
+
+
+
+
+
 
 
 

@@ -1,0 +1,60 @@
+The memory hierachy promises large amounts of fast memory for low cost, a 
+promise that it has largely been able to fulfil and which is a benefit to us ;
+today. To accomplish this, it uses varying types of memory throughout the 
+hierachy, with small amounts of fast and expensive memory located close to the 
+processor and large amounts of slow, cheap memory furthest from the processor. 
+The cache is the fastest piece of memory in the hierachy, and lives inside the 
+processor. The goal of the computer engineers organizing memory is to maximize 
+the number of memory calls from the processor that are found on cache (hits) 
+and minimize the number of times the memory must be fetched from RAM (misses).
+
+The cache controller takes advantage of the principle of locality to decide 
+which memory words should be loaded from RAM. It knows that when the processor 
+asks for an address, it will likely want the following addresses too. When a 
+miss occurs and the cache controller must bring back memory from RAM, it brings 
+back a whole group of words, called a block. It only fetches blocks on a miss. 
+When the processor asks for a memory address, the cache controller has two 
+questions to answer: 1) is the requested memory in cache, i.e. is this a hit? 
+2) If so, where can it locate this memory? The controller answers these 
+questions in reverse order, first attempting to find the address and then 
+registering a miss and fetching from RAM if it cannot be found. To find a 
+memory address in cache, the controller must either have some mapping from real 
+addresses to locations in cache, or it must perform a linear search through the 
+whole cache on every memory call.
+
+To avoid the expense of linear search, Direct Mapped Cache uses a method by 
+which it knows exactly what seat in cache a given memory address should be 
+sitting at. First it calculates a block number for the memory address. This 
+block number, for a byte-addressable machine, is simply the byte address 
+divided by the number of bytes per word, divided by the number of words per 
+block. (Block number) modulo (# of blocks in cache) gives the block location in 
+cache that the memory address must be stored at. To distinguish between the 
+many different memory addresses that could be stored at any given block 
+location in cache, the controller stores a tag, which is the bits in the memory 
+address that preceed the byte number (2 most insignificant bits for a 32 bit 
+machine) and the word number (2 next most insiginificant bits for 4 words per 
+block). When it gets a memory request, it looks at the tag to determine if this 
+is the right address. It also stores a valid bit that indicates that the 
+address is up to date. If the tag is incorrect or the valid bit is low, RAM 
+must be accessed (miss). If the tag is incorrect but the valid bit is high, a 
+collision has occured and the current data must be stored back to RAM and the 
+correct block brought back to cache. Memory reads are much simpler for the 
+cache controller to deal with than memory writes. A memory write updates the 
+address stored in cache, but then this data must be updated in the rest of the 
+system as well, or inconsistencies will lead to inaccurate results. To update 
+the rest of the system, cache schemes can use one of two methods: write through 
+or write buffer. Write through systems simply update RAM every time cache is 
+written through, ensuring perfect consistency at the cost of performance. Write 
+buffer systems store a dirty bit to indicate that when a new block is brought 
+in to a seat in cache, the old values must be updated in RAM.
+
+Understanding these details about the memory hierachy and cache specifically is 
+very important for computer engineers and scientists because it is necessary to 
+compute cache performance. When a miss occurs in a cache that stores 4 32 bit 
+words per block, a new block must be fetched, and if the RAM bus is only 1 word 
+wide, this involves at least 4 bus cycles. Bus clock cycles are typically 3 to 
+4 times slower than processor clock cycles, so this result in the processor i
+inserting 16 stalls. Increasing processor preformance will not necessarily 
+improve overall system performance very much if the cache does not keep pace, 
+and all of these metrics must be balanced by computer systems designers and 
+engineers. 

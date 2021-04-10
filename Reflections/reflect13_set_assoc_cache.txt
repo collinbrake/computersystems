@@ -1,0 +1,66 @@
+Just as the memory hierarchy makes many compromises between size, access speed, 
+and cost, cache, as a member of the memory hierarchy, makes compromises between 
+two different architectures that each offer their own benefits. Understanding 
+the rational behind these compromises not only provides a low-level 
+understanding of how cache works, but provides a great example of how we as 
+computer engineers and scientists should make design compromises that place a 
+design in the sweet spot between economy and functionality. Compromises like 
+these must be made in purchasing components for computer systems, as well as in 
+choosing software architectures, since the more functional the software 
+application the more design and coding hours required and the more expensive 
+the application becomes. Studying the compromises that have led to optimal 
+systems like modern cache will allow us to find that balance between cost and 
+functionality in our work.
+
+Modern caches are a combination  between the direct mapped cache discussed in 
+the last reflection and another kind of cache called associative cache. Fully 
+associative caches work as follows. Any block from RAM may be loaded into any 
+block location in cache. When the cache controller has to determine if a block 
+exists in cache (the memory request was a hit) and where the block is located, 
+it must search every location in cache. To limit this search to one processor 
+clock cycle, special hardware is used to search the entire cache 
+simultaneously. The complexity of this hardware increases as a high-order 
+polynomial of the number of locations in cache, making a large 
+fully-associative cache very expensive. Associative cache is very performant, 
+however, since all the locations in cache are used and the absolute minimal 
+number of replacements is made since blocks brought in from RAM can occupy any 
+"seat" in cache.
+
+To mitigate the cost of a fully-associative cache, the set-associative cache 
+scheme is implimented, where the cache is composed of direct-mapped associative 
+sets of blocks. When a block is brought in from RAM, it is direct mapped to one 
+of the sets, but then can be stored at any block location within the set. When 
+the block is requested by the processor, the cache controller only needs to 
+search the corresponding set instead of the whole cache. An N-way 
+set-associative cache contains sets of N blocks. Chosing the value of N is an 
+optimization problem where the performance of the cache is balanced against the 
+complexity (and thus cost) of the search hardware. The performance of the cache 
+increases with N, but follows the law of diminishing returns. Plotting 
+performance over N would give an inverse exponential curve. The complexity of 
+the search hardware, as stated before, is a high-order polynomial of N. 
+Optimizing N means chosing the value of N before the performance gain tapers 
+off and before the steep part of the complexity curve is reached.
+
+Set-associtive caches are a economical solution to the high number of 
+replacements made in direct-mapped cache. Even with a set-associative cache, 
+however, replacements will be made regularily since RAM is much larger than the 
+data size of cache. When a new block from RAM needs to be stored in a full set, 
+which block in the set will it replace? Replacement policies have a big impact 
+on cache performance, and thus have been studied extensively resulting in 
+intelligent handling of this scenario. First, the validity bit of each block in 
+the set is checked, and if an invalid block exists it is replaced. If no blocks 
+are invalid, modern cache controllers determine which block is the least 
+recently used (LRU) and replace that block. The principle of locality in the 
+temporal domain applies here and ensures that replacing the LRU block will 
+result in the lowest miss rate. To determine LRU, the cache must record the 
+access history of each block in a set. This additional information is stored in 
+an NxN matrix, since for each of the N blocks there must be bytes that show how 
+long ago it was accessed relative to the other blocks. Since N bytes are used 
+to store this "timestamp", the hardware that updates this matrix is very simple.
+
+This discussion of cache leads to two questions: 1) Do write-buffer cache 
+implimentations replace dirty blocks in addition to invalid blocks before they 
+apply the LRU algorithm? 2) Could the LRU algorithm technically store all
+necessary information in a N x log2(N) matrix, since for each of the N blocks 
+there are only N meaningful positions in the access sequence? Obviously this 
+would make the hardware that updates this matrix much more complex.
