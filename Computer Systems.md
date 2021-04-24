@@ -2535,7 +2535,7 @@ Cache is the star of the memory hierarchy story. It is the closest memory in the
   - 
   - Each block needs 147 bits
   - 128 data bits for 4 words
-  - Tag field needs 18 bits: 32 - 10(log2(1024)) - 2 - 2
+  - Tag field needs 18 bits: 32 - 10 from (log2(1024)) - 2 - 2
     - bit zero and bit 1 tells me which byte in word
     - bits two and 3 tell me which word per block
     - 10 bits to tell me which block I am at in cache
@@ -2711,6 +2711,145 @@ If we have 8G of ram, and 16 K cache, the cache will get full. How will we repla
 ### Dependability
 
 - Mean failure rate
+
+### Questions for After Spring Break
+
+- Clarification on direct-mapped cache
+  - How large must the tag really be?
+  - Can we really subtract the 2 bits for byte address and  the log2(words/block)?
+  - So the cache controller just knows that if the memory address requested was 4096,
+    - If we have a byte addressable machine, and 4 words per cache block 1 block in cache, we would divide this number by 2^4 to get the value 512.
+      - It accesses the 
+- Clarification on set-associative
+  - We only need one tag per set.
+  - The bits specifying the byte address, word address for block, and block address for set are all in the offset part of the memory address correct?
+  - Are validity bits still assigned per block? they must be
+
+### DRAM VS SRAM
+
+- Dynamic ram uses only one transistor with a capacitor
+- Sram uses six transistors for one bit
+
+### Multi-level Cache
+
+- In the Intel 3-level scheme, L1 cache is on the processor
+  - L2 is private to the processor, but may be outside
+  - L3 is shared between cores
+
+## Dependability
+
+In general, systems can be in one of two states:
+
+1. Service accomplishment - service delivered as specified
+2. Service interruption - deviation from specified service
+   1. You must recognize this failure and remove from service for repair
+
+- Failure metrics
+
+  - Mean Time to Failure (MTTF)
+    - In reality this is a bell curve, where a small minority will fail much sooner and a small minority will last much longer
+  - Say the MTTF for a hard disk is 114 years or 1000000 hours
+    - a warehouse scale computer has 50000 servers. Each server has 2 disks
+    - annual failure rate = 114 years -> 8760 so it is 8760/1000000
+    - two disks failing per day
+
+- Reliability: MTTF
+
+- Service interruption: mean time to repair (MTTR)
+
+- Mean time between failures
+
+  - MTBF = MTTF + MTTR
+
+- **Availability** = MTTF / MTBF
+
+  - goal is to improve the availability of systems
+  - increase MTTF: fault avoidance, fault tolerance, fault forecasting
+  - reduce MTTR: improve tools and diagnosis
+
+- Dependability of storage system
+
+  - When I store something in disk and then read it back, I'd better get the same data
+
+  - **Hamming distance**
+
+    - number of bits that are different between two bit patterns
+
+    - ```assembly
+      0110101
+      0010100 
+      -------
+      0100001 # flag different bits in two above bit patterns
+      
+      # hamming distance between the two bit patterns is 2
+      ```
+
+    - 
+
+  - You code the bits so that when you read it you immediately know if something went wrong
+
+  - You have to have a certain hamming distance before you can make these guarantees
+
+    - Minimum distance of 2 provides single bit **error detection**
+      - parity code
+    - Minimum distance of 3 provides *single bit error correction*, *2 bit error detection*
+      - This is binary - if something is wrong, we can just flip it
+
+  - I want to store a 32-bit word
+
+    - **add bits** to my 32 bit pattern to make a **code**
+    - hamming distance between two code words: `d_h(c_i - c_j)`
+
+- Coding 
+
+  - Repetition code (3) repeat by 3
+  - want to store is: 1011 ->111000111111
+  - Thus we can detect if either two or 1 bits are wrong
+  
+- Voyager probes
+
+  - Both outside of our solar system
+  - in interstellar space
+  - The voyager has three computers - only if at least two agree, will it take an action
+
+### Hamming Code
+
+- Parity
+  - Odd or even
+  - I look at a bit sequence and I count the number of ones and say it is odd or even parity
+  - 100110111 -> 6, even parity
+  - 1011 -> 3 1's, odd parity
+- 101011001
+  - count bits from bit 1 at left
+- **Single error correction and double error detection are features of the Hamming code**
+  - it can tell you where an error is located, at least with single errors
+- We add four **parity bits** to each byte to get these features
+  - ![image-20210423130820352](/home/collin/.config/Typora/typora-user-images/image-20210423130820352.png)
+  - **Rules**
+    - p1: check for even parity in odd bits
+      - a zero when there is even parity in the odd data bits
+      - this is checking its own position, so it compensates with a one if there was originally odd parity
+    - p2: check for even parity in every other pair: (2, 3), (6, 7), (10, 11), ....
+    - p3: check for even parity in groups of four (4, 5, 6, 7), (12, 13, 14, 15), ...
+  - ![image-20210423132444192](/home/collin/.config/Typora/typora-user-images/image-20210423132444192.png)
+    - recheck the parity bits and read in reverse order to get the bit position that went bad
+      - You recheck or recalculate the parity bits at the end and the pattern they form is the index of the bit that went bad, in **reverse**
+      - You do not recalculate the parity bits based on the data bits only but based on themselves as well
+        - i.e., for no corruption, the parity bits should all be zero
+    - The number of parity bits needed to protect n bits seems to be log2(n) + 1, except that we need 8 bits to protect 64
+
+## Virtual Memory
+
+Memory hierarchy gets us close to ideal memory.
+
+- Use main memory as a cache for secondary disk storage
+  - managed jointly by CPU hardware and the OS
+  - **address translation** a virtual address gets turned into a physical address in RAM 
+  - MMU (memory management unit) translates
+    - has its own private cache for storing addresses that have been recently translated
+    - translation look-aside buffer
+
+
 
 
 

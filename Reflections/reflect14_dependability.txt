@@ -1,0 +1,90 @@
+This reflection will discusses a variety of topics significant to computer 
+systems, including multi-level cache and the subject of dependability. 
+Multi-level cache is one of the primary tools used by the memory hierarchy in 
+an attempt to converge on ideal memory that is fast, large, and cheap all at 
+the same time. Dependability touches one of the eight great ideas central to 
+computer systems: "Dependability via redundancy." We will examine how redundant 
+systems are inherently more reliable than centralized systems. Dependability in 
+the memory hierarchy will bring us to the topic of Hamming code, which is one 
+of the most influential and important ideas in computer science, utilizing a 
+small number of bits in an ingenious encoding to ensure the validity of a 
+signal, whether that signal be an address read from a magnetic disk or a 
+communications signal to a satellite.
+
+Multi-level cache is used extensively in modern computer systems to reduce miss 
+rate and miss penalty at a minimum of hardware cost. Intel's i7 cores take 
+advantage of a 3-level cache hierarchy. Let's calculate the CPI for a 
+three-level cache system with the following statistics:
+
+Base CPI:       0.5
+L1 miss rate:   7%
+L1 access time: 2 processor cycles
+L2 miss rate:   3.5%
+L2 access time: 10 cycles
+L3 miss rate:   0.5%
+L3 access time: 100 cycles
+Proc. clock:    3 GHz
+RAM bus clock:  10 MHz
+R/W per instr:  30%
+
+To calculate actual CPI:
+
+0.5 + 0.3(2 + 10*7% + 100*3.5% + 3G/10M * 0.5%) = 2.81 CPI
+
+In general, for the ith level of cache we add the number of cycles resulting 
+from multiplying the ith level cache's access time with the miss rate of the 
+cache (or memory unit) at level i-1.
+
+When choosing the size and access latency (which are inversely proportional for 
+a fixed cost) of the last layer of cache, engineers must consider that the miss 
+penalty for accessing main memory is huge, so it is generally good to minimize 
+the miss rate for this last layer at all costs, even if it means increasing 
+latency. Of course, when the miss penalty for the last layer of cache 
+approaches the same order of magnitude as the access time of main memory, the 
+system performance will reverse and start decreasing. The correct choice for L3 
+cache will minimize the processor CPI. In the above example, if we increase the 
+access time and proportionally decrease miss rate, or vice-versa, we see a 
+large performance drop, indicating that the current selection for L3 cache is 
+good.
+
+Performance is not the only metric computer engineers must consider when 
+desiging systems. Dependability is also very important. Dependability is 
+measured as mean time to failure (MTTF). Mean time between repairs (MTBR) is 
+calculated as MTTF + MTTR (mean time to repair). Availablity is the most 
+important metric in reliability engineering and is the ratio MTTF / MTBF. 
+Availability can be used to calculate a margin of safety in redundant systems, 
+i.e. if the availability of a component is low there should be a significant 
+number of extra components to take up the slack for those being repaired. 
+Redundant systems give greater stability partially because they average the 
+MTTF of many components instead of relying on one component. The life span of a 
+given component is specified by the manufacturer as an average of the life 
+spans of many components. Any given component may fail well before that figure 
+or may last longer, since MTTF follows a bell curve. If a company relies on one 
+server with a single hard disk to serve their web page, the disk may go down 
+well before it is expected to. If the work load is split over four small disks, 
+however, the average failure rate will be more consistent and intact components 
+can take up the slack for down components.
+
+Dependability in storage systems also means providing guarantees against data 
+corruption, ensuring that user's data is intact when read it out. Bits can 
+become corrupt, so some type of error detection and correction is required if 
+guarantees are to be made about data's validity. The Hamming code is a common 
+method of checking for data corruption, both in memory systems and in wireless 
+communication. The standard used in memory systems is called SEC/DED, which 
+stands for single-error correction/double-error detection. A Hamming distance 
+of 3 is needed to allow the correction of a single corrupt bit in a binary 
+pattern or the detection of two corrupt bits. If the position of the corrupt 
+bit is know, it is corrected by flipping the bit. SEC/DED gives the position of 
+the corrupt bit if only one is corrupted, but if two are corrupt it can only 
+notify of data corruption and cannot give the position of the corrupted bits. S
+SEC/DED works loosely as follows for 1 byte of data. Four additional bits are 
+added to the original 8, at locations 1, 2, 4, and 8. These bits are set to 
+give even parity in certain groups in the bit pattern. When the 12 bit string 
+is read, even parity is checked for in these same bit groups. Any time odd 
+parity is encountered, the corresponding parity bit is recalculated as 1. If 
+even parity is preserved, it is calculated as zero. Reading the four 
+recalculated parity bits in reverse order (p4, p3, p2, p1) provides the index 
+of a single corrupt bit, and is zero if no bits have been corrupted. This 
+checks for the corruption of the parity bits themselves as well. Hamming code 
+requires log2(n) + 1 parity bits to encode an n-bit data string. This is the 
+minimum number of bits required to maintain a Hamming distance of 3.
