@@ -2848,14 +2848,191 @@ Memory hierarchy gets us close to ideal memory.
   - MMU (memory management unit) translates
     - has its own private cache for storing addresses that have been recently translated
     - translation look-aside buffer
+- Caching solves the speed problem, but virtual memory solves the size problem
+- Virtual memory uses RAM (main memory) as a cache for secondary storage (disk)
+  - virtual address space is where the processor addresses
+  - VM "block" is called a page, because it is much bigger than a cache block
+    - 16K of words, for example
+  - misses are called "page faults"
+- <img src="/home/collin/.config/Typora/typora-user-images/image-20210426131056782.png" alt="image-20210426131056782" style="zoom:67%;" />
+- DMA Controller - Direct Memory Access Controller
+  - An independent device that can read and write memory for the processor
+  - The processor says how many words to use and where to get them from
+- If we have 48 addressing bits, then we have 2^48 addressing space
+- MMU is a device on the data path that translates virtual addresses to physical addresses
+- It takes millions of cycles to recover from a page fault
+- We want to minimize page faults
+  - Fully associative placement
+  - Very smart page replacement algorithms
+    - LRU + much more powerful algorithms
+- TLB is a private cache of addresses for the MMU
+- The processor reads the MMU but it is maintained by the processor
+- See flowchart in slides
 
+## Chapter 5 Summary
 
+- Memory Subsystems
+- Electronic Storage
+- Two important metrics:
+  - Access time - dependent on the electronics
+  - Cycle time - dependent on organization
+- Wide-bus access
+- The principle of locality - If you access something you will want it again - temporal locality
+- Locality is a program behavior
+- Ideal memory is what the memory hierarchy is trying to get us to
+- Cache - the star of the show, a buffer between RAM and the registers
+- Set-associative cache is a compromise between fully associative and set associative
+- Virtual Memory
+  - Translation look-aside buffer is a private cache for the MMU
+  - So it doesn't have to calculate the physical address every time
 
+- Misses
+  - compulsory misses
+    - first access to a block
+  - capacity
+    - full cache
+  - conflict misses - in a non-fully associative
+    - need the spot
+- Cache coherence
+  - synchronize cache between parallel processor caches
+  - Snooping protocols
+    - each cache monitors bus reads/writes
+- Von-Neumann architecture
+  - Single memory for stored program
+- Harvard architecture
+  - Split data and instruction memory
+  - Some architectures recognize this advantage and have split cache for instructions and data
+- Cache
+  - Write-allocate
+    - Writes to cache and RAM on a miss
+  - Non-write-allocate
+    - Writes only to RAM on a miss
+      - Bad choice if you will need the operand in the near future
+- L2 TLB
+  - used like a L2 cache
+  - Not corresponding to L2 cache - things aren't translated twice!!
+- Performance programing
+  - Large strides result in poor locality
+- In a multiprocessor with shared L2 or L3 cache
+  - less associativity than cores results in conflict misses
+  - More cores => need to increase associativity
+- Implementing a VMM on an ISA not designed for it
+- Principle of locality
+  - programs use a small part of their memory space frequently
+- Where can I put a block?
+  - One place - DM
+  - n places - n-way set-associative
+  - Any place - fully associative
+- How is a block found
+  - four methods - indexing (direct mapped) limited search (set-associative) full search (fully associative) or lookup table (page table)
+- If I run out of cache room, which block is replaced?
+  - LRU or random
+- How are writes handled
+  - each level in hierarchy can use either write-through or write-back
 
+### Locality
 
+- Temporal
+  - I moved one word into cache - will I use it again?
+- Spatial
+  - I moved one block into cache because I needed one of the words in it - will I use the rest of the words?
 
+## Parallel Processors from Client to Cloud
 
+- Goal: connect multiple computers to get higher performance
 
+  - multiprocessors
+  - scalability, availability, power efficiency
+
+- Task-level (process-level) parallelism - pipelining
+
+  - high throughput for independent jobs
+
+- Software
+
+  - sequential: matrix multiplication
+    - this can be modified to run on parallel     processors
+  - concurrent: operating system
+
+- Parallel software challenges
+
+  - Partitioning
+    - how do you break up a task
+    - does it move between cores
+  - Coordination
+    - how do I prevent data races?
+    - the Holy Grail has always been peer-to-peer processors
+      - we don't want managing processors
+  - Communications overhead
+    - lousy partitioning results in high communications overhead
+
+- Amdahl's Law
+
+  - sequential part of code can limit speedup
+    - i.e., loading into a matrix
+  - Tnew = Tparallelizable/100 + Tsequential
+  - Speedup depends on both the structure and the size of the processor
+    - if you have an operation to do with a 100x100 matrix, throwing 100 processors at it will result in a much better speedup than if you had a 10x10 matrix
+
+- Utilization
+
+- Flit's Taxonomy
+
+  - Separate data streams and instruction streams
+    - SISD
+      - Intel Pentium 4
+    - SIMD
+      - x86
+    - MISD
+      - perhaps an autonomous car where the same sensor data is being fed to multiple processing unts running different algorithms
+      - redundancy
+    - MIMD
+      - Intel Xeon
+
+- Vector Processors
+
+  - Highly-pipelined processors that handle vectors the same way that most handle a scalar
+
+- Multithreading
+
+  - Supported either at hardware level or kernel level
+  - Replicate registers, PC, etc
+  - Fine-grain multithreading
+    - At the level of the issue slots we intermix the cores
+  - Coarse
+    - Runs an atomic thread
+    - Runs the next
+  - Symmetric multi-threading
+    - maximize compute resources
+    - generally supported in hardware
+  - Problems
+    - Hackers can look at energy consumption and be able to hack into systems
+    - Tolerating cache-miss latency
+      - thread switch may be most effective
+    - Multiple simple cores might share resources more effective
+
+- Shared Memory
+
+  - hardware provides single physical address space for all processors
+  - synchronize shared variables using locks
+  - ![image-20210430133116353](/home/collin/.config/Typora/typora-user-images/image-20210430133116353.png)
+
+- GPU's
+
+  - Sit on bridges
+    - electronic glue
+    - north/south bridge
+  - ![image-20210430133227142](/home/collin/.config/Typora/typora-user-images/image-20210430133227142.png)
+
+- With SISD and SIMD, for a small number (4-8) cores, the compiler can do pretty well taking single-purpose code and split it up
+
+- For GPU's, the problem domain must be very restricted
+
+- Sum reduction problem
+
+- 
+
+  
 
 
 

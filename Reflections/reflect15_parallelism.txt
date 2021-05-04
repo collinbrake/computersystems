@@ -1,0 +1,60 @@
+Parallel processing is one of the hardest problems in computer system design, 
+and there are still many open problems in the domain. When processors hit the 
+power wall in the early 21st century, designers quit trying to speed up
+clock rate and squeeze performance out of a single processor, instead moving to 
+the parallel processing model where multiple processor cores are harnessed to 
+execute a single program, increasing throughput. Pipelining is one type of 
+parallel processing, executing independent (although closely related) 
+instructions synchronously. At the other end of the scale, a shed full of 
+computers mining bitcoin is also a type of parallel processing, although not a 
+kind we are interested in studying since it is crude and does not extend well 
+to most problems. In between these extremes is the type of parallel processing 
+this reflection will cover, where the execution of a single stored program is 
+split across multiple cores.
+
+Flynn's taxonomy identifies four general types of processing:
+
+  1. SISD (single-instruction, single data)
+  2. SIMD (single-instruction, multiple data)
+  3. MISD (multiple-instruction, single-data, not used)
+  4. MIMD (multiple-instruciton, multiple-data)
+
+SISD machines such as the Intel Pentium 4 are almost extinct today. SIMD 
+architectures are very commmon, while MIMD is reserved for supercomputers. 
+When we as computer engineers choose the processor to solve a given problem, we 
+must consider the size of the problem domain. CPU's with 4-8 cores can take 
+sequential code and effectively split it out over the small number of cores. 
+GPU's with many more threads, however, can only be effectively harnessed in a 
+small problem space, such as dense linear algebra computations for graphics or 
+machine learning.
+
+Software for parallel processors has always been many years behind the parallel 
+hardware. The ability to take a sequential program and split its execution 
+across multiple processors is hard to obtain in software. The challenges in 
+parallel processing are found in partitioning, coordination, and communications 
+overhead. When partitioning a task, the compiler or hardware must decide what 
+portions are split out and if the partions move between precessors. 
+Coordination involves preventing data races. The ideal of parallel processing 
+has always been peer-to-peer processors, i.e. there is no managing processor 
+handling the coordination, but rather the processors must all coordinate on the 
+same plane. Communications overhead is intrinsic to processing a single task on 
+multiple cores, and is needed to synchronize data between the processors. 
+Communications overhead is high if the partioning job was poorly done. 
+Multithreading is a common parallel processing technique that can either run 
+atomic threads back to back (coarse multi-threading), intermix the cores at the 
+level of the instruction issue slots (fine multi-threading), or completely 
+intermix the operations to maximize utilization of compute resources. 
+Multi-threading suffers from security liabilities and is severly hampered by 
+cache-miss latency, so it may disappear from the computing landscape in the 
+future.
+
+Given that paralilizing operations is so complicated, how much does it actually 
+gain us? Amdahl's Law states that the parts of a program that are inherently 
+sequential will limit the speedup from introducing more processors. For 
+example, loading values into a matrix cannot be parallelized even though matrix 
+computations can be. Speedup depends both on the structure and the size of the 
+problem. If you have an operation to do with a 100x100 matrix, throwing 100 
+processors at it will result in a much better speedup than if you had a 10x10 
+matrix. Parallel processing is a very complicated but very useful concept that 
+computer scientists and engineers will interact with many times in their 
+careers.
